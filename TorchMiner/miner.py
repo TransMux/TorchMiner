@@ -10,6 +10,7 @@ import tqdm
 from IPython.core.display import HTML, display
 
 from . import drawers
+from . import utils
 
 
 class Miner(object):
@@ -19,7 +20,7 @@ class Miner(object):
             model,
             optimizer,
             loss_func,
-            code="geass",
+            experiment="geass",
             train_dataloader=None,
             val_dataloader=None,
             resume=True,
@@ -27,13 +28,12 @@ class Miner(object):
             persist_epoch=1,
             gpu=True,
             drawer="matplotlib",
-            hooks={},
+            hooks=None,
             max_epochs=None,
-            statable={},
+            statable=None,
             logging_format=None,
-            trival=False,
             in_notebook=False,
-            plugins=[],
+            plugins=None,
             logger=None,
             sheet=None,
             accumulated_iter=1,
@@ -53,7 +53,7 @@ class Miner(object):
             * Miner: The Miner Object
             * Data: The Batch data yield by the loader
             return Value should be a float number of the loss.
-        :param string code: Experiment Name
+        :param string experiment: Experiment Name
         :param torch.utils.data.DataLoader train_dataloader:
 
             --- Optional ---
@@ -67,7 +67,6 @@ class Miner(object):
         :param max_epochs:
         :param statable:
         :param logging_format:
-        :param trival:
         :param in_notebook:
         :param plugins:
         :param logger:
@@ -79,29 +78,35 @@ class Miner(object):
         :param amp:
         :param amp_scaler:
         """
-        self.alchemistic_directory = alchemistic_directory # working dir
-        self.code = code
-        if trival:
-            self.code = f"trival_{code}"
-        self.create_dirs()
-        self.gpu = gpu
-        self.devices = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.logger = logger
-        self.code_dir = os.path.join(alchemistic_directory, self.code)
-        if self.logger is None:
-            self.set_logging_config(alchemistic_directory, self.code, logging_format)
-            self.logger = logging
-        self.create_drawer(drawer)
-        self.models_dir = os.path.join(alchemistic_directory, self.code, "models")
-        self.in_notebook = in_notebook
-        self.statable = statable
-        self.accumulated_iter = float(accumulated_iter)
-        self.ignore_optimizer_resume = ignore_optimizer_resume
+        if hooks is None:
+            hooks = {}
+        if statable is None:
+            statable = {}
+        if plugins is None:
+            plugins = []
 
         self.model = model
         self.optimizer = optimizer
         self.train_dataloader = train_dataloader
         self.val_dataloader = val_dataloader
+
+        self.alchemistic_directory = alchemistic_directory  # working dir
+        self.experiment = experiment
+        self.gpu = gpu
+        self.logger = logger
+        self.in_notebook = in_notebook
+        self.statable = statable
+        self.ignore_optimizer_resume = ignore_optimizer_resume
+
+        self.create_dirs()
+        self.devices = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.code_dir = os.path.join(alchemistic_directory, self.experiment)
+        if self.logger is None:
+            self.set_logging_config(alchemistic_directory, self.experiment, logging_format)
+            self.logger = logging
+        self.create_drawer(drawer)
+        self.models_dir = os.path.join(alchemistic_directory, self.experiment, "models")
+        self.accumulated_iter = float(accumulated_iter)
 
         self.loss_func = loss_func
 
@@ -115,7 +120,6 @@ class Miner(object):
         self.current_val_iteration = 0
         self.hook_funcs = hooks
         self.max_epochs = max_epochs
-        self.trival = trival
         self.forward_fn = forward
         self.verbose = verbose
         self.amp = amp
@@ -165,7 +169,7 @@ class Miner(object):
         self.sheet.create_column("code", "Code")
         self.sheet.create_column("progress", "Progress")
         self.sheet.create_column("loss", "Loss")
-        self.sheet.update("code", self.code)
+        self.sheet.update("code", self.experiment)
 
     def create_sheet_column(self, key, title):
         if self.sheet is None:
@@ -365,8 +369,6 @@ class Miner(object):
             )
             t = self.tqdm(self.train_dataloader)
             for index, data in enumerate(t):
-                if self.trival is True and index == 10:
-                    break
                 train_loss = self.run_train_iteration(index, data, train_iters)
                 t.set_postfix({"train loss": train_loss})
                 if int((index + 1) % self.accumulated_iter) == 0:
@@ -406,8 +408,6 @@ class Miner(object):
                     self.notify(f"validate epoch {self.current_epoch}")
                     t = self.tqdm(self.val_dataloader)
                     for index, data in enumerate(t):
-                        if self.trival is True and index == 10:
-                            break
                         val_loss = self.run_val_iteration(index, data, val_iters)
                         t.set_postfix({"val loss": val_loss})
                         total_val_loss += val_loss
@@ -618,17 +618,9 @@ class Miner(object):
 
     def create_dirs(self):
         """Create directories"""
-        self.create_dir("")
-        self.create_dir(self.code)
-        self.create_dir(self.code, "models")
-
-    def create_dir(self, *args):
-        """Create directory"""
-        current_dir = self.alchemistic_directory
-        for dir_name in args:
-            current_dir = os.path.join(current_dir, dir_name)
-            if not os.path.isdir(current_dir):
-                os.mkdir(current_dir)
+        utils.create_dir("")
+        utils.create_dir(self.experiment)
+        utils.create_dir(self.experiment, "models")
 
     def periodly_flush(self, force=False):
         if self.sheet is None:

@@ -21,7 +21,7 @@ class Drawer:
                 positions.
         """
         self.step_file = os.path.join(
-            miner.alchemistic_directory, miner.code, ".drawer_step"
+            miner.alchemistic_directory, miner.experiment, ".drawer_step"
         )
         self.miner = miner
 
@@ -67,7 +67,7 @@ class TensorboardDrawer(Drawer):
     def __init__(self, miner, state=None):
         super().__init__(miner, state)
         self.writer = SummaryWriter(
-            log_dir=os.path.join(miner.alchemistic_directory, miner.code)
+            log_dir=os.path.join(miner.alchemistic_directory, miner.experiment)
         )
 
     def scalars(self, x, value, graph):
@@ -81,7 +81,7 @@ class TensorboardDrawer(Drawer):
         """
         if graph not in self.state:
             self.state[graph] = 0
-        key = "{}/{}".format(self.miner.code, graph)
+        key = "{}/{}".format(self.miner.experiment, graph)
         if isinstance(value, dict):
             self.writer.add_scalars(key, value, self.state[graph])
         else:
@@ -93,7 +93,7 @@ class MatplotlibDrawer(Drawer):
     def __init__(self, miner, state=None):
         super().__init__(miner, state)
         self.graph_dir = os.path.join(
-            self.miner.alchemistic_directory, self.miner.code, "graphs"
+            self.miner.alchemistic_directory, self.miner.experiment, "graphs"
         )
         self.data_file = os.path.join(self.graph_dir, ".graphs.pickle")
         self.colors = [
