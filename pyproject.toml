@@ -1,12 +1,17 @@
 [tool.poetry]
 name = "TorchMiner"
-version = "0.1.0"
+version = "0.2.0"
 description = "Run Torch With A Simple Miner"
 authors = ["InEase <inease28@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.7"
+matplotlib = "^3.5.0"
+tensorboardX = "^2.4.1"
+torch = "^1.10.0"
+tqdm = "^4.62.3"
+ipython = "^7.29.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
