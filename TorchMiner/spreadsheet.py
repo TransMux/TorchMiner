@@ -84,7 +84,7 @@ class MinetorchSpreadsheet(Plugin):
 
 class GoogleSheet(MinetorchSpreadsheet):
     def __init__(
-        self, sheet_id, service_account_file, meta_prefix="", build_kwargs=None
+            self, sheet_id, service_account_file, meta_prefix="", build_kwargs=None
     ):
         super().__init__()
 
@@ -123,8 +123,8 @@ class GoogleSheet(MinetorchSpreadsheet):
         }
         result = (
             self.sheet.developerMetadata()
-            .search(spreadsheetId=self.sheet_id, body=search)
-            .execute()
+                .search(spreadsheetId=self.sheet_id, body=search)
+                .execute()
         )
         if len(result.items()) == 0:
             return False
@@ -427,8 +427,8 @@ class GoogleSheet(MinetorchSpreadsheet):
         }
         r = (
             self.sheet.developerMetadata()
-            .search(spreadsheetId=self.sheet_id, body=search)
-            .execute()
+                .search(spreadsheetId=self.sheet_id, body=search)
+                .execute()
         )
         result = {}
         for item in r["matchedDeveloperMetadata"]:
@@ -445,8 +445,8 @@ class GoogleSheet(MinetorchSpreadsheet):
             media = MediaFileUpload(value, mimetype="image/png")
             file = (
                 self.drive.files()
-                .create(body=file_metadata, media_body=media, fields="id")
-                .execute()
+                    .create(body=file_metadata, media_body=media, fields="id")
+                    .execute()
             )
             return file.get("id")
         except HttpError as e:
@@ -459,8 +459,8 @@ class GoogleSheet(MinetorchSpreadsheet):
         try:
             result = (
                 self.drive.files()
-                .list(q="name='minetorch_assets'", fields="files(id)")
-                .execute()
+                    .list(q="name='minetorch_assets'", fields="files(id)")
+                    .execute()
             )
             dir_id = result["files"][0]["id"]
         except IndexError:

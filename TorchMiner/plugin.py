@@ -22,7 +22,7 @@ class Plugin(Statable):
 
     def notify(self, message, _type="info"):
         message = f"[{self.name}] {message}"
-        self.miner.notify(message, _type)
+        self.miner._notify(message, _type)
 
     def __getattr__(self, key):
         if self.miner is None or not hasattr(self.miner, key):
