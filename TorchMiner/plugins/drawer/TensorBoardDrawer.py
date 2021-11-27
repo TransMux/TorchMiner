@@ -1,10 +1,12 @@
 # -*- coding:utf-8 -*-
+import os
+
 from TorchMiner.plugins.drawer import Drawer
 from tensorboardX import SummaryWriter
 
 
 class TensorboardDrawer(Drawer):
-    """To vistualize everything in training process using tensorboard"""
+    """To visualize everything in training process using tensorboard"""
 
     def __init__(self, miner, state=None):
         super().__init__(miner, state)
@@ -13,13 +15,12 @@ class TensorboardDrawer(Drawer):
         )
 
     def scalars(self, x, value, graph):
-        """Add a scalar on a graph
-
-        Args:
-            value (dict):
-                scalars to put on the graph
-            graph (string):
-                graph name
+        """
+        Add a scalar on a graph
+        :param x:
+        :param value:
+        :param graph:
+        :return:
         """
         if graph not in self.state:
             self.state[graph] = 0

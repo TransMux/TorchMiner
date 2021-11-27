@@ -1,52 +1,43 @@
 # -*- coding:utf-8 -*-
+import os
+
 from TorchMiner.plugins import Plugin
 
 
 class Drawer(Plugin):
-    """To vistualize everything in training process"""
+    """To visualize everything in training process"""
 
-    def __init__(self, miner, state=None):
-        """Constructor
-
-        Args:
-            miner (Miner):
-                Miner instance
-            graph (state, optional):
-                Defaults to None. Since we could draw multiple graph during
-                training, the state records the current position of each graph
-                The keys are the name of the graphs and values are current
-                positions.
-        """
-        super().__init__()
-        self.step_file = os.path.join(
-            miner.alchemistic_directory, miner.experiment, ".drawer_step"
-        )
-        self.miner = miner
+    def __init__(self, prefix="Drawer", state=None):
+        super().__init__(prefix)
 
         if state is None:
             self.state = {}
         else:
             self.state = state
 
-    def scalars(self, x, value, graph):
-        """Plot different scalars on a graph
+    def set_miner(self, miner):
+        super(Drawer, self).set_miner(miner)
+        self.step_file = os.path.join(
+            miner.alchemistic_directory, miner.experiment, ".drawer_step"
+        )
 
-        Args:
-            value (dict):
-                scalar to plot
-            graph (string):
-                graph name
+    def scalars(self, x, value, graph):
+        """
+        Plot different scalars on a graph
+        :param x:
+        :param value:
+        :param graph:
+        :return:
         """
         raise NotImplementedError()
 
     def scalar(self, x, value, graph):
-        """Plot one scalar on a graph
-
-        Args:
-            value (float):
-                scalar to plot
-            graph (string):
-                graph name
+        """
+        Plot one scalar on a graph
+        :param x:
+        :param value:
+        :param graph:
+        :return:
         """
         self.scalars(x, {graph: value}, graph)
 
