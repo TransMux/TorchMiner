@@ -1,5 +1,5 @@
 from .miner import Miner
-from .plugin import Plugin
+from TorchMiner.plugins.plugin import Plugin
 from .statable import Statable
 
 __version__ = "0.2.1"

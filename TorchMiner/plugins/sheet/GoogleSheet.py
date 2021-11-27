@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 import httplib2
 
-from .BasicSheet import Sheet, _async
+from TorchMiner.plugins.sheet import Sheet, _async
 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build

@@ -4,7 +4,7 @@ import pandas as pd
 import seaborn as sn
 from sklearn.metrics import classification_report, cohen_kappa_score, confusion_matrix
 
-from .plugin import Plugin
+from TorchMiner.plugins.plugin import Plugin
 
 
 class MultiClassesClassificationMetricWithLogic(Plugin):
