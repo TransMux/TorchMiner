@@ -11,9 +11,9 @@ You can access all Functions of MineTorch simply use `Miner`.
 
 ## Project ToDo
 
- [] Move ***Notebook***, ***Drawer*** and ***Sheet*** Operations Outside of Miner as a Plugin
- 
  [] Make Console Output a plugin 
+
+ [] Move ***Notebook***, ***Drawer*** and ***Sheet*** Operations Outside of Miner as a Plugin
  
  [] Add Plugin Able And Disable Stat
  

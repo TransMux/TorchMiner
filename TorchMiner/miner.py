@@ -362,9 +362,9 @@ class Miner(object):
             self.hook_funcs[name](miner=self, **payload)
 
         for plugin in self.plugins:
-            if not plugin.before_hook(name, payload):
+            if not plugin.is_satisfied(name, payload):  # Judge whether The Plugin supports the operation
                 continue
-            if hasattr(plugin, name):
+            if hasattr(plugin, name):  # Test if Have the hook name
                 getattr(plugin, name)(**payload)
 
     def train(self):
