@@ -80,32 +80,36 @@ class Miner(object):
         """
         if hooks is None:
             hooks = {}
+        self.hook_funcs = hooks
         if statable is None:
             statable = {}
+        self.statable = statable  # TODO:what is statable
         if plugins is None:
             plugins = []
+        self.plugins = plugins
+        for plugin in self.plugins:
+            plugin.set_miner(self)
 
+        self.alchemistic_directory = alchemistic_directory  # working dir
         self.model = model
         self.optimizer = optimizer
         self.train_dataloader = train_dataloader
-        self.val_dataloader = val_dataloader
-
-        self.alchemistic_directory = alchemistic_directory  # working dir
         self.experiment = experiment
+
+        self.val_dataloader = val_dataloader
         self.gpu = gpu
         self.logger = logger
         self.in_notebook = in_notebook
-        self.statable = statable
         self.ignore_optimizer_resume = ignore_optimizer_resume
 
         self.create_dirs()
         self.devices = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.code_dir = os.path.join(alchemistic_directory, self.experiment)
+        self.experiment_dir = os.path.join(alchemistic_directory, self.experiment)
+        self.models_dir = os.path.join(alchemistic_directory, self.experiment, "models")
         if self.logger is None:
             self.set_logging_config(alchemistic_directory, self.experiment, logging_format)
             self.logger = logging
         self.create_drawer(drawer)
-        self.models_dir = os.path.join(alchemistic_directory, self.experiment, "models")
         self.accumulated_iter = float(accumulated_iter)
 
         self.loss_func = loss_func
@@ -118,36 +122,31 @@ class Miner(object):
         self.current_epoch = 0
         self.current_train_iteration = 0
         self.current_val_iteration = 0
-        self.hook_funcs = hooks
         self.max_epochs = max_epochs
         self.forward_fn = forward
         self.verbose = verbose
         self.amp = amp
-        self.amp_scaler = amp_scaler
-
-        if self.amp and self.amp_scaler:
-            self.scaler = torch.cuda.amp.GradScaler()
 
         self.sheet = sheet
         if self.sheet:
             self._init_sheet()
 
-        self.plugins = plugins
-        for plugin in self.plugins:
-            plugin.set_miner(self)
+        self.amp_scaler = amp_scaler
+        if self.amp and self.amp_scaler:
+            self.scaler = torch.cuda.amp.GradScaler()
 
-        self._set_tqdm()
+        self._set_tqdm(in_notebook)
+        # --- Before Init ---
         self.call_hook_func("before_init")
         self._check_statable()
         self.init_model()
         if self.sheet:
-            self.sheet_progress = dict(
-                epoch=0, train_percentage="0%", val_percentage="0%"
-            )
+            self.sheet_progress = dict(epoch=0, train_percentage="0%", val_percentage="0%")
             self.last_flushed_at = 0
             self.sheet.onready()
             self.sheet.flush()
         self.status = "init"
+        # --- After Init ---
         self.call_hook_func("after_init")
 
     def _check_statable(self):
@@ -157,8 +156,8 @@ class Miner(object):
             ):
                 raise Exception(f"The {name} is not a statable object")
 
-    def _set_tqdm(self):
-        if self.in_notebook:
+    def _set_tqdm(self, in_notebook):
+        if in_notebook:
             self.tqdm = tqdm.notebook.tqdm
         else:
             self.tqdm = tqdm.tqdm
@@ -257,6 +256,7 @@ class Miner(object):
         if self.resume is not True and self.resume and checkpoint_path is None:
             # user has specified a none existed model, should raise a error
             raise Exception(f"Could not find model {self.resume}")
+            # TODO:这个Exception应该下降到寻找model的地方
 
         if checkpoint_path is not None:
             msg = f"Start to load checkpoint {checkpoint_path}"

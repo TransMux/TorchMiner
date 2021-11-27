@@ -1,4 +1,4 @@
-from minetorch.statable import Statable
+from TorchMiner.statable import Statable
 import os
 
 
