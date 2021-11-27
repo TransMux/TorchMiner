@@ -13,7 +13,7 @@ You can access all Functions of MineTorch simply use `Miner`.
 
  [] Make Console Output a plugin 
 
- [] Move ***Notebook***, ***Drawer*** and ***Sheet*** Operations Outside of Miner as a Plugin
+ [] Move ***Notebook***, ***Drawer*** Operations Outside of Miner as a Plugin
  
  [] Add Plugin Able And Disable Stat
  

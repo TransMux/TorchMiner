@@ -3,7 +3,7 @@ import functools
 import logging
 from concurrent.futures import ThreadPoolExecutor
 
-from ..plugin import Plugin
+from TorchMiner.plugin import Plugin
 
 pool = ThreadPoolExecutor(1)
 logger = logging.getLogger(__name__)
