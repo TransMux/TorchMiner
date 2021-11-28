@@ -4,7 +4,7 @@ import os
 # import time
 # from datetime import datetime
 from pathlib import Path
-
+from TorchMiner.Logger import ColoredLogger
 import torch
 import tqdm
 # from IPython.core.display import HTML, display
@@ -29,10 +29,8 @@ class Miner(object):
             gpu=True,
             # drawer="matplotlib",
             max_epochs=9999999,
-            logging_format=None,
             in_notebook=False,
             plugins=None,
-            logger=None,
             accumulated_iter=1,
             ignore_optimizer_resume=False,
             forward=None,
@@ -68,9 +66,7 @@ class Miner(object):
                  - Receives only payload when Hooks in Plugin was called
                  - One can use many plugins in a miner
         :param max_epochs:
-        :param logging_format:
         :param in_notebook:
-        :param logger:
         :param accumulated_iter:
         :param ignore_optimizer_resume:
         :param forward:
@@ -90,10 +86,9 @@ class Miner(object):
         self.optimizer = optimizer
         self.train_dataloader = train_dataloader
         self.experiment = experiment
-
+        self.logger = ColoredLogger("Miner")
         self.val_dataloader = val_dataloader
         self.gpu = gpu
-        self.logger = logger
         self.in_notebook = in_notebook
         self.ignore_optimizer_resume = ignore_optimizer_resume
 
@@ -101,9 +96,6 @@ class Miner(object):
         self.devices = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.experiment_dir = os.path.join(alchemistic_directory, self.experiment)
         self.models_dir = os.path.join(alchemistic_directory, self.experiment, "models")
-        if self.logger is None:
-            self._set_logging_config(alchemistic_directory, self.experiment, logging_format)
-            self.logger = logging
         # self._create_drawer(drawer)
         self.accumulated_iter = float(accumulated_iter)
 
@@ -243,7 +235,7 @@ class Miner(object):
             else:
                 checkpoint_path = None
                 msg = "Could not find checkpoint to resume, " "train from scratch"
-                self._notify(msg, "warning")
+                self.logger.warning(msg)
         elif isinstance(self.resume, str):  # specify model file name
             checkpoint_path = self._search_model_file(self.resume)
         elif isinstance(self.resume, int):  # specify train epoch
@@ -257,7 +249,7 @@ class Miner(object):
 
         if checkpoint_path is not None:
             msg = f"Start to load checkpoint {checkpoint_path}"
-            self._notify(msg)
+            self.logger.info(msg)
             checkpoint = torch.load(checkpoint_path)
             # Read Train Process From Resumed Data
             self.current_epoch = checkpoint.get("epoch", 0)
@@ -270,12 +262,11 @@ class Miner(object):
             try:
                 self.model.load_state_dict(checkpoint["state_dict"], strict=True)
             except Exception as e:
-                msg = (
+                self.logger.warning(
                     f"load checkpoint failed with {e}, the state in the "
                     "checkpoint is not matched with the model, "
                     "try to reload checkpoint with unstrict mode"
                 )
-                self._notify(msg, "warning")
                 # UnStrict Mode
                 self.model.load_state_dict(checkpoint["state_dict"], strict=False)
 
@@ -284,11 +275,10 @@ class Miner(object):
                 try:
                     self.optimizer.load_state_dict(checkpoint["optimizer"])
                 except Exception as e:
-                    msg = (
+                    self.logger.warning(
                         f"load optimizer state failed with {e}, will skip this error and continue, "
                         "stop the process if it is not expected"
                     )
-                    self._notify(msg, "warning")
 
             # load drawer state
             # if (self.drawer is not None) and ("drawer_state" in checkpoint):
@@ -299,19 +289,17 @@ class Miner(object):
                 try:
                     self.scaler.load_state_dict(checkpoint["scaler"])
                 except Exception as e:
-                    msg = (
+                    self.logger.warning(
                         f"load scaler state failed with {e}, will skip this error and continue, "
                         "stop the process if it is not expected"
                     )
-                    self._notify(msg, "warning")
 
             # load plugin states
             for plugin in self.plugins:
                 key = f"__plugin.{plugin.__class__.__name__}__"
                 plugin.load_state_dict(checkpoint.get(key, {}))
 
-            msg = f"Checkpoint {checkpoint_path} Successfully Loaded"
-            self._notify(msg, "success")
+            self.logger.info(f"Checkpoint {checkpoint_path} Successfully Loaded")
         self.model = self._parallel_model(self.model)
 
     def _parallel_model(self, model):
@@ -320,17 +308,13 @@ class Miner(object):
         if self.gpu:
             gpu_count = torch.cuda.device_count()
             if gpu_count == 0:
-                self._notify("no GPU detected, will train on CPU.")
+                self.logger.warning("no GPU detected, will train on CPU.")
             else:
-                self._notify(f"found {gpu_count} GPUs, will use all of them to train")
+                self.logger.info(f"found {gpu_count} GPUs, will use all of them to train")
                 devices = list(map(lambda x: f"cuda:{x}", range(gpu_count)))
                 model.cuda()
                 model = torch.nn.DataParallel(model, devices)
         return model
-
-    def _notify(self, message, _type="info"):
-        getattr(self.logger, "info" if _type == "success" else _type)(message)
-        print("[Dev Debug] notify:", _type, message)
 
     def train(self):
         """
@@ -347,7 +331,7 @@ class Miner(object):
             total_train_loss = 0
             # percentage = 0
             total = len(self.train_dataloader)
-            self._notify(f"start to train epoch {self.current_epoch}")
+            self.logger.info(f"start to train epoch {self.current_epoch}")
             # self._update_progress(
             #     force=True,
             #     epoch=self.current_epoch,
@@ -379,7 +363,7 @@ class Miner(object):
             # self._update_progress(force=True, train_percentage=f"{current_percentage}%")
 
             total_train_loss = total_train_loss / train_iters
-            self._notify(
+            self.logger.info(
                 f"training of epoch {self.current_epoch} finished, "
                 f"loss is {total_train_loss}"
             )
@@ -391,7 +375,7 @@ class Miner(object):
             if self.val_dataloader:
                 val_iters = len(self.val_dataloader)
                 with torch.no_grad:
-                    self._notify(f"validate epoch {self.current_epoch}")
+                    self.logger.info(f"validate epoch {self.current_epoch}")
                     t = self.tqdm(self.val_dataloader)
                     for index, data in enumerate(t):
                         val_loss = self._run_val_iteration(index, data, val_iters)
@@ -404,7 +388,7 @@ class Miner(object):
                     # )
 
                 total_val_loss = total_val_loss / val_iters
-                self._notify(
+                self.logger.info(
                     f"validation of epoch {self.current_epoch} "
                     f"finished, loss is {total_val_loss}"
                 )
@@ -423,13 +407,10 @@ class Miner(object):
                 self.lowest_train_loss = total_train_loss
 
             if total_val_loss < self.lowest_val_loss:
-                message = (
-                    "current val loss {} is lower than lowest {}, "
-                    "persist this model as best one".format(
-                        total_val_loss, self.lowest_val_loss
-                    )
+                self.logger.info(
+                    f"current val loss {total_val_loss} is lower than lowest {self.lowest_val_loss}, "
+                    f"persist this model as best one"
                 )
-                self._notify(message, "success")
                 self.lowest_val_loss = total_val_loss
                 self.persist("best")
             else:
@@ -442,7 +423,7 @@ class Miner(object):
 
             if self.current_epoch >= self.max_epochs:
                 self._call_plugins("before_quit")
-                self._notify("exceed max epochs, quit!")
+                self.logger.warning("exceed max epochs, quit!")
                 break
 
             # if self.sheet:
@@ -561,8 +542,7 @@ class Miner(object):
 
         modelpath = self._standard_model_path(name)
         torch.save(state, modelpath)
-        message = f"save checkpoint to {self._standard_model_path(name)}"
-        self._notify(message)
+        self.logger.info(f"save checkpoint to {self._standard_model_path(name)}")
         self._call_plugins("after_checkpoint_persisted", modelpath=modelpath)
 
     def _standard_model_path(self, model_name):

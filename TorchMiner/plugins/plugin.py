@@ -2,10 +2,9 @@ import os
 
 
 class Plugin:
-    def __init__(self, prefix=""):
+    def __init__(self):
         self.name = self.__class__.__name__
         self.miner = None
-        self.prefix = prefix
 
     # Plugin Data Begin
     def load_state_dict(self, state):
