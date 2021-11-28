@@ -79,7 +79,7 @@ class Miner(object):
             plugins = []
         self.plugins = plugins
         for plugin in self.plugins:
-            plugin.set_miner(self)
+            plugin.prepare(self)
 
         self.alchemistic_directory = alchemistic_directory  # working dir
         self.model = model
@@ -192,33 +192,6 @@ class Miner(object):
     #     else:
     #         self.drawer = drawer
 
-    # def _notebook_output(self, message, _type="info"):
-    #     type_config = {
-    #         "info": ["💬", "#6f818a"],
-    #         "success": ["✅", "#7cb305"],
-    #         "error": ["❌", "#cf1322"],
-    #         "warning": ["⚠️", "#d46b08"],
-    #     }[_type]
-    #     if self.in_notebook:
-    #         display(
-    #             HTML(
-    #                 f'<div style="font-size: 12px; color: {type_config[1]}">'
-    #                 f'⏰ {time.strftime("%b %d - %H:%M:%S")} >>> '
-    #                 f"{type_config[0]} {message}"
-    #                 "</div>"
-    #             )
-    #         )
-
-    # def _notebook_divide(self, message):
-    #     if self.in_notebook:
-    #         display(
-    #             HTML(
-    #                 '<div style="display: flex; justify-content: center;">'
-    #                 f'<h3 style="color: #7cb305; border-bottom: 4px dashed #91d5ff; padding-bottom: 6px;">{message}</h3>'
-    #                 "</div>"
-    #             )
-    #         )
-
     def _init_model(self):
         """resume from some checkpoint"""
         if isinstance(self.model, torch.nn.DataParallel):
@@ -324,7 +297,6 @@ class Miner(object):
         while True:
             self.current_epoch += 1
             self._call_plugins("before_epoch_start", epoch=self.current_epoch)
-            # self._notebook_divide(f"Epoch {self.current_epoch}")
             self.model.train()  # Set Train Mode
             train_iters = len(self.train_dataloader)
 
