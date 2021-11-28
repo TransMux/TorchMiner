@@ -28,7 +28,6 @@ class Miner(object):
             persist_epoch=1,
             gpu=True,
             # drawer="matplotlib",
-            hooks=None,
             max_epochs=9999999,
             statable=None,
             logging_format=None,
@@ -62,7 +61,6 @@ class Miner(object):
         :param int eval_epoch: Default 1. Validate every 'eval_epoch'
         :param int persist_epoch: Default 1. Save model every 'persist_epoch'
         :param gpu:
-        :param hooks:
         :param plugins:
             The Differences between Hooks and Plugins:
                 Hooks are Functions,They receive Miner and Payloads
@@ -84,10 +82,6 @@ class Miner(object):
         :param amp:
         :param amp_scaler:
         """
-        # --- Init Hooks ---
-        if hooks is None:
-            hooks = {}
-        self.hook_funcs = hooks
         # --- Init Process Recorders ---
         if statable is None:
             statable = {}
@@ -136,17 +130,13 @@ class Miner(object):
         self.verbose = verbose
         self.amp = amp
 
-        self.sheet = sheet
-        if self.sheet:
-            self._init_sheet()
-
         self.amp_scaler = amp_scaler
         if self.amp and self.amp_scaler:
             self.scaler = torch.cuda.amp.GradScaler()
 
         self._set_tqdm(in_notebook)
         # --- Before Init ---
-        self._call_hook_func("before_init")
+        self._call_plugins("before_init")
         self._check_statable()
         self._init_model()
         if self.sheet:
@@ -156,7 +146,17 @@ class Miner(object):
             self.sheet.flush()
         self.status = "init"
         # --- After Init ---
-        self._call_hook_func("after_init")
+        self._call_plugins("after_init")
+
+    def _call_plugins(self, name, **payload):
+        """
+        Call Hook Functions
+        :param name: Hook Name
+        :param payload: extra prams in specific Stage
+        :return:
+        """
+        for plugin in self.plugins:
+            getattr(plugin, name)(self, **payload)
 
     def _check_statable(self):
         for name, statable in self.statable.items():
@@ -171,23 +171,23 @@ class Miner(object):
         else:
             self.tqdm = tqdm.tqdm
 
-    def _init_sheet(self):
-        self.sheet.set_miner(self)
-        self.sheet.reset_index()
-        self.sheet.create_column("code", "Code")
-        self.sheet.create_column("progress", "Progress")
-        self.sheet.create_column("loss", "Loss")
-        self.sheet.update("code", self.experiment)
+    # def _init_sheet(self):
+    #     self.sheet.set_miner(self)
+    #     self.sheet.reset_index()
+    #     self.sheet.create_column("code", "Code")
+    #     self.sheet.create_column("progress", "Progress")
+    #     self.sheet.create_column("loss", "Loss")
+    #     self.sheet.update("code", self.experiment)
 
-        # def create_sheet_column(self, key, title):
-        #     if self.sheet is None:
-        #         return
-        #     self.sheet.create_column(key, title)
-        #
-        # def update_sheet(self, key, value):
-        #     if self.sheet is None:
-        #         return
-        #     self.sheet.update(key, value)
+    # def create_sheet_column(self, key, title):
+    #     if self.sheet is None:
+    #         return
+    #     self.sheet.create_column(key, title)
+    #
+    # def update_sheet(self, key, value):
+    #     if self.sheet is None:
+    #         return
+    #     self.sheet.update(key, value)
 
     def _set_logging_config(self, alchemistic_directory, experiment, logging_format):
         self.log_dir = os.path.join(alchemistic_directory, experiment)
@@ -351,22 +351,6 @@ class Miner(object):
         getattr(self.logger, "info" if _type == "success" else _type)(message)
         print("[Dev Debug] notify:", _type, message)
 
-    def _call_hook_func(self, name, **payload):
-        """
-        Call Hook Functions
-        :param name: Hook Name
-        :param payload: extra prams in specific Stage
-        :return:
-        """
-        if name in self.hook_funcs:
-            self.hook_funcs[name](miner=self, **payload)
-
-        for plugin in self.plugins:
-            if not plugin.is_satisfied(name, payload):  # Judge whether The Plugin supports the operation
-                continue
-            if hasattr(plugin, name):  # Test if Have the hook name
-                getattr(plugin, name)(**payload)
-
     def train(self):
         """
         Core Function:start to train the model
@@ -374,7 +358,7 @@ class Miner(object):
         """
         while True:
             self.current_epoch += 1
-            self._call_hook_func("before_epoch_start", epoch=self.current_epoch)
+            self._call_plugins("before_epoch_start", epoch=self.current_epoch)
             # self._notebook_divide(f"Epoch {self.current_epoch}")
             self.model.train()  # Set Train Mode
             train_iters = len(self.train_dataloader)
@@ -476,13 +460,13 @@ class Miner(object):
                 self.persist("epoch_{}".format(self.current_epoch))
 
             if self.current_epoch >= self.max_epochs:
-                self._call_hook_func("before_quit")
+                self._call_plugins("before_quit")
                 self._notify("exceed max epochs, quit!")
                 break
 
             # if self.sheet:
             #     self.sheet.flush()
-            self._call_hook_func(
+            self._call_plugins(
                 "after_epoch_end",
                 train_loss=total_train_loss,
                 val_loss=total_val_loss,
@@ -492,7 +476,7 @@ class Miner(object):
     def _run_train_iteration(self, index, data, train_iters):
         self.status = "train"
         self.current_train_iteration += 1
-        self._call_hook_func(
+        self._call_plugins(
             "before_train_iteration_start",
             data=data,
             index=index,
@@ -516,7 +500,7 @@ class Miner(object):
         #         )
         #     )
 
-        self._call_hook_func(
+        self._call_plugins(
             "after_train_iteration_end",
             loss=loss,
             data=data,
@@ -537,7 +521,7 @@ class Miner(object):
     def _run_val_iteration(self, index, data, val_iters):
         self.status = "val"
         self.current_val_iteration += 1
-        self._call_hook_func(
+        self._call_plugins(
             "before_val_iteration_start",
             data=data,
             index=index,
@@ -552,7 +536,7 @@ class Miner(object):
         #             self.current_epoch, index, val_iters, loss
         #         )
         #     )
-        self._call_hook_func(
+        self._call_plugins(
             "after_val_iteration_ended",
             predicts=predict,
             loss=loss,
@@ -565,7 +549,7 @@ class Miner(object):
 
     def persist(self, name):
         """save the model to disk"""
-        self._call_hook_func("before_checkpoint_persisted")
+        self._call_plugins("before_checkpoint_persisted")
         # if self.drawer is not None:
         #     drawer_state = self.drawer.get_state()
         # else:
@@ -602,7 +586,7 @@ class Miner(object):
         torch.save(state, modelpath)
         message = f"save checkpoint to {self._standard_model_path(name)}"
         self._notify(message)
-        self._call_hook_func("after_checkpoint_persisted", modelpath=modelpath)
+        self._call_plugins("after_checkpoint_persisted", modelpath=modelpath)
 
     def _standard_model_path(self, model_name):
         return os.path.join(self.models_dir, f"{model_name}.pth.tar")

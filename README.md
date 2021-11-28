@@ -21,3 +21,6 @@ You can access all Functions of MineTorch simply use `Miner`.
  
  [] Move Miner Options to yaml File
  
+ Now Plugins only supports output functions, they can`t modify or change the data of the Miner class.Any Ideas? I am glad to know.
+ 
+ [] Write about my design concept
