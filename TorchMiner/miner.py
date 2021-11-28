@@ -122,7 +122,7 @@ class Miner(object):
         if self.amp and self.amp_scaler:
             self.scaler = torch.cuda.amp.GradScaler()
 
-        self._set_tqdm(in_notebook)
+        self.tqdm = tqdm.tqdm
         # --- Before Init ---
         self._call_plugins("before_init")
         self._init_model()
@@ -144,12 +144,6 @@ class Miner(object):
         """
         for plugin in self.plugins:
             getattr(plugin, name)(self, **payload)
-
-    def _set_tqdm(self, in_notebook):
-        if in_notebook:
-            self.tqdm = tqdm.notebook.tqdm
-        else:
-            self.tqdm = tqdm.tqdm
 
     # def _init_sheet(self):
     #     self.sheet.set_miner(self)
