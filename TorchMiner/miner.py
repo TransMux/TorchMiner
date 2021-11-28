@@ -86,7 +86,10 @@ class Miner(object):
         self.optimizer = optimizer
         self.train_dataloader = train_dataloader
         self.experiment = experiment
-        self.logger = ColoredLogger("Miner")
+        self.logger_prototype = ColoredLogger
+        # Hook Point "before_logger_init" Added in v0.2.3
+        self._call_plugins("before_logger_init")
+        self.logger = self.logger_prototype("Miner")
         self.val_dataloader = val_dataloader
         self.gpu = gpu
         self.in_notebook = in_notebook
@@ -114,10 +117,6 @@ class Miner(object):
         self.verbose = verbose
         self.amp = amp
 
-        # self.sheet = sheet
-        # if self.sheet:
-        #     self._init_sheet()
-
         self.amp_scaler = amp_scaler
         if self.amp and self.amp_scaler:
             self.scaler = torch.cuda.amp.GradScaler()
@@ -126,11 +125,6 @@ class Miner(object):
         # --- Before Init ---
         self._call_plugins("before_init")
         self._init_model()
-        # if self.sheet:
-        #     self.sheet_progress = dict(epoch=0, train_percentage="0%", val_percentage="0%")
-        #     self.last_flushed_at = 0
-        #     self.sheet.onready()
-        #     self.sheet.flush()
         self.status = "init"
         # --- After Init ---
         self._call_plugins("after_init")

@@ -4,12 +4,13 @@ from TorchMiner.Logger import ColoredLogger
 class BasePlugin:
     def __init__(self):
         self.name = self.__class__.__name__
-        self.logger = ColoredLogger(self.name)
         self.miner = None
+        self.logger = None  # Plugin Logger will be inited in prepare stage
 
     def prepare(self, miner, *args, **kwargs):
         # Can be used for Monkey Patch Operations
         self.miner = miner
+        self.logger = self.miner.logger_prototype(self.name)
 
     # Plugin Data Begin
     def load_state_dict(self, state):
@@ -60,6 +61,9 @@ class BasePlugin:
         pass
 
     def after_checkpoint_persisted(self, *args, **kwargs):
+        pass
+
+    def before_logger_init(self, *args, **kwargs):
         pass
     # Hook Functions end
 
