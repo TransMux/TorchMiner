@@ -34,7 +34,6 @@ class Miner(object):
             in_notebook=False,
             plugins=None,
             logger=None,
-            sheet=None,
             accumulated_iter=1,
             ignore_optimizer_resume=False,
             forward=None,
@@ -74,7 +73,6 @@ class Miner(object):
         :param logging_format:
         :param in_notebook:
         :param logger:
-        :param sheet:
         :param accumulated_iter:
         :param ignore_optimizer_resume:
         :param forward:
@@ -130,6 +128,10 @@ class Miner(object):
         self.verbose = verbose
         self.amp = amp
 
+        # self.sheet = sheet
+        # if self.sheet:
+        #     self._init_sheet()
+
         self.amp_scaler = amp_scaler
         if self.amp and self.amp_scaler:
             self.scaler = torch.cuda.amp.GradScaler()
@@ -139,11 +141,11 @@ class Miner(object):
         self._call_plugins("before_init")
         self._check_statable()
         self._init_model()
-        if self.sheet:
-            self.sheet_progress = dict(epoch=0, train_percentage="0%", val_percentage="0%")
-            self.last_flushed_at = 0
-            self.sheet.onready()
-            self.sheet.flush()
+        # if self.sheet:
+        #     self.sheet_progress = dict(epoch=0, train_percentage="0%", val_percentage="0%")
+        #     self.last_flushed_at = 0
+        #     self.sheet.onready()
+        #     self.sheet.flush()
         self.status = "init"
         # --- After Init ---
         self._call_plugins("after_init")
