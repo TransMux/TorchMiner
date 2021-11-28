@@ -10,18 +10,17 @@ TorchMiner is designed to automatic process the training ,evaluating and testing
 You can access all Functions of MineTorch simply use `Miner`.
 
 ## Project ToDo
- [] Yeah! I can make tqdm Jupyter a Plugin too!
 
  [] Make Console Output a plugin 
  
  [] Abstract Plugin Manager
 
- [] Move ***Notebook***, ***Drawer*** Operations Outside of Miner as a Plugin
+ [] Move ***Drawer*** Operations Outside of Miner as a Plugin
  
  [] Add Plugin Able And Disable Stat
  
  [] Move Miner Options to yaml File, Add Config Class
  
- Now Plugins only supports output functions, they can`t modify or change the data of the Miner class.Any Ideas? I am glad to know.
+ Now Plugins only supports output functions, they can't modify or change the data of the Miner class.Any Ideas? I am glad to know.
  
  [] Write about my design concept

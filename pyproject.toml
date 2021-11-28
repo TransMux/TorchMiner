@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "TorchMiner"
-version = "0.2.1"
+version = "0.2.2"
 description = "Run Torch With A Simple Miner"
 authors = ["InEase <inease28@gmail.com>"]
 readme = "README.md"
