@@ -1,14 +1,14 @@
 # -*- coding:utf-8 -*-
 import os
 
-from TorchMiner.plugins import Plugin
+from TorchMiner import BasePlugin
 
 
-class Drawer(Plugin):
+class Drawer(BasePlugin):
     """To visualize everything in training process"""
 
-    def __init__(self, prefix="Drawer", state=None):
-        super().__init__(prefix)
+    def __init__(self, state=None):
+        super().__init__()
 
         if state is None:
             self.state = {}

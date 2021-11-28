@@ -1,7 +1,7 @@
 import os
 
 
-class Plugin:
+class BasePlugin:
     def __init__(self):
         self.name = self.__class__.__name__
         self.miner = None

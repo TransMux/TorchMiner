@@ -3,7 +3,7 @@ import functools
 import logging
 from concurrent.futures import ThreadPoolExecutor
 
-from TorchMiner.plugins import Plugin
+from TorchMiner.plugins import BasePlugin
 
 pool = ThreadPoolExecutor(1)
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ class ColumnNotExistsError(Exception):
     pass
 
 
-class Sheet(Plugin):
+class Sheet(BasePlugin):
     def __init__(self):
         super().__init__()
         self.columns = []

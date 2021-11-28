@@ -4,10 +4,10 @@ import pandas as pd
 import seaborn as sn
 from sklearn.metrics import classification_report, cohen_kappa_score, confusion_matrix
 
-from TorchMiner.plugins.plugin import Plugin
+from TorchMiner import BasePlugin
 
 
-class MultiClassesClassificationMetricWithLogic(Plugin):
+class MultiClassesClassificationMetricWithLogic(BasePlugin):
     """MultiClassesClassificationMetric
     This can be used directly if your loss function is torch.nn.CrossEntropy
     """
