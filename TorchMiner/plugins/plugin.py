@@ -1,8 +1,7 @@
-from TorchMiner.statable import Statable
 import os
 
 
-class Plugin(Statable):
+class Plugin:
     def __init__(self, prefix=""):
         self.name = self.__class__.__name__
         self.miner = None
