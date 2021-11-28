@@ -7,26 +7,17 @@ class Plugin:
         self.miner = None
         self.prefix = prefix
 
+    # Plugin Data Begin
     def load_state_dict(self, state):
         pass
 
     def state_dict(self):
         return {}
 
-    def is_satisfied(self, hook_name, payload):
-        return True
+    # Plugin Data End
 
     def set_miner(self, miner):
         self.miner = miner
-
-    def notify(self, message, _type="info"):
-        message = f"[{self.name}] {message}"
-        self.miner._notify(message, _type)
-
-    def __getattr__(self, key):
-        if self.miner is None or not hasattr(self.miner, key):
-            raise AttributeError(key)
-        return getattr(self.miner, key)
 
     # def print_txt(self, printable, name):
     #     with open(self.plugin_file(f"{name}.txt"), "a") as f:

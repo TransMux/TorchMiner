@@ -29,7 +29,6 @@ class Miner(object):
             gpu=True,
             # drawer="matplotlib",
             max_epochs=9999999,
-            statable=None,
             logging_format=None,
             in_notebook=False,
             plugins=None,
@@ -69,7 +68,6 @@ class Miner(object):
                  - Receives only payload when Hooks in Plugin was called
                  - One can use many plugins in a miner
         :param max_epochs:
-        :param statable:
         :param logging_format:
         :param in_notebook:
         :param logger:
@@ -80,10 +78,6 @@ class Miner(object):
         :param amp:
         :param amp_scaler:
         """
-        # --- Init Process Recorders ---
-        if statable is None:
-            statable = {}
-        self.statable = statable  # TODO:what is statable
         # --- Init Plugin ---
         if plugins is None:
             plugins = []
@@ -139,7 +133,6 @@ class Miner(object):
         self._set_tqdm(in_notebook)
         # --- Before Init ---
         self._call_plugins("before_init")
-        self._check_statable()
         self._init_model()
         # if self.sheet:
         #     self.sheet_progress = dict(epoch=0, train_percentage="0%", val_percentage="0%")
@@ -159,13 +152,6 @@ class Miner(object):
         """
         for plugin in self.plugins:
             getattr(plugin, name)(self, **payload)
-
-    def _check_statable(self):
-        for name, statable in self.statable.items():
-            if not (
-                    hasattr(statable, "state_dict") and hasattr(statable, "load_state_dict")
-            ):
-                raise Exception(f"The {name} is not a statable object")
 
     def _set_tqdm(self, in_notebook):
         if in_notebook:
@@ -318,13 +304,6 @@ class Miner(object):
                         "stop the process if it is not expected"
                     )
                     self._notify(msg, "warning")
-
-            # load other statable state
-            # if "statable" in checkpoint:
-            #     for name, statable in self.statable.items():
-            #         if name not in checkpoint["statable"]:
-            #             continue
-            #         statable.load_state_dict(checkpoint["statable"][name])
 
             # load plugin states
             for plugin in self.plugins:
@@ -571,11 +550,7 @@ class Miner(object):
             "lowest_train_loss": self.lowest_train_loss,
             "lowest_val_loss": self.lowest_val_loss,
             # "drawer_state": drawer_state,
-            "statable": {},
         }
-
-        for statable_name, statable in self.statable.items():
-            state["statable"][statable_name] = statable.state_dict()
 
         for plugin in self.plugins:
             key = f"__plugin.{plugin.__class__.__name__}__"
@@ -610,14 +585,14 @@ class Miner(object):
 
         return None
 
-    # TODO: implement methods below
-    def graceful_stop(self):
-        """stop train and exist after this epoch"""
-        pass
-
-    def save_and_stop(self):
-        """save the model immediately and stop training"""
-        pass
+    # # TODO: implement methods below
+    # def graceful_stop(self):
+    #     """stop train and exist after this epoch"""
+    #     pass
+    #
+    # def save_and_stop(self):
+    #     """save the model immediately and stop training"""
+    #     pass
 
     def _create_dirs(self):
         """Create directories"""

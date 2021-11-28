@@ -10,6 +10,7 @@ TorchMiner is designed to automatic process the training ,evaluating and testing
 You can access all Functions of MineTorch simply use `Miner`.
 
 ## Project ToDo
+ [] Add Global Logger
 
  [] Make Console Output a plugin 
  
