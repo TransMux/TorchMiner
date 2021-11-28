@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 import os
 from matplotlib.figure import Figure
-from TorchMiner.plugins.drawer import Drawer
+from TorchMiner.plugins.Drawer import Drawer
 import _pickle as pickle
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 

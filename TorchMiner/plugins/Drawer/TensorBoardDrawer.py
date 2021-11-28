@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 import os
 
-from TorchMiner.plugins.drawer import Drawer
+from TorchMiner.plugins.Drawer import Drawer
 from tensorboardX import SummaryWriter
 
 
