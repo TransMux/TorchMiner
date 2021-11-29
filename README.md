@@ -24,3 +24,7 @@ You can access all Functions of MineTorch simply use `Miner`.
  Now Plugins only supports output functions, they can't modify or change the data of the Miner class.Any Ideas? I am glad to know.
  
  [] Write about my design concept
+ 
+ Critical 
+ 
+ [] Deal About the input size problem, such as Batch-first...

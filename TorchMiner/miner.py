@@ -107,7 +107,7 @@ class Miner(object):
         self.loss_func = loss_func
 
         self.resume = resume
-        self.eval_stride = eval_epoch
+        self.eval_epoch = eval_epoch
         self.persist_stride = persist_epoch
         self.lowest_train_loss = float("inf")
         self.lowest_val_loss = float("inf")
@@ -306,11 +306,11 @@ class Miner(object):
             )
 
             # Begin eval
-            if self.val_dataloader:
+            if not self.current_epoch % self.eval_epoch and self.val_dataloader:
                 self.model.eval()
                 total_val_loss = 0
                 val_iters = len(self.val_dataloader)
-                with torch.no_grad:
+                with torch.no_grad():
                     self.logger.info(f"validate epoch {self.current_epoch}")
                     t = self.tqdm(self.val_dataloader)
                     for index, data in enumerate(t):
@@ -347,11 +347,9 @@ class Miner(object):
                     )
                     self.lowest_val_loss = total_val_loss
                     self.persist("best")
-                else:
-                    self.persist("latest")
             else:  # No val Settings
                 total_val_loss = None
-
+            self.persist("latest")
             # if self.drawer is not None:
             #     png_file = self.drawer.scalars(
             #         self.current_epoch,
@@ -382,7 +380,7 @@ class Miner(object):
             )
 
     def _run_train_iteration(self, data):
-        self.status = "train"
+        self.status = "train"  # TODO:self.status Unused
         self.current_train_iteration += 1
         if self.amp and self.amp_scaler:
             with torch.cuda.amp.autocast():
@@ -391,7 +389,7 @@ class Miner(object):
             separate_loss = self.scaler.scale(separate_loss)
         else:
             _, loss = self._forward(data)
-            separate_loss = loss / self.accumulated_iter
+            separate_loss = loss / self.accumulated_iter  # TODO:实现accumulated_iter
         separate_loss.backward()
         loss = loss.detach().cpu().item()
         return loss
@@ -404,7 +402,7 @@ class Miner(object):
         return predict, loss
 
     def _forward(self, data):
-        if self.forward_fn:
+        if self.forward_fn:  # TODO:Use SubClass rather than functions
             return self.forward_fn(self, data)
         else:
             predict = self.model(data[0].to(self.devices))
@@ -473,6 +471,6 @@ class Miner(object):
 
     def _create_dirs(self):
         """Create directories"""
-        utils.create_dir("")
-        utils.create_dir(self.experiment)
-        utils.create_dir(self.experiment, "models")
+        utils.create_dir(self.alchemistic_directory)
+        utils.create_dir(self.alchemistic_directory, self.experiment)
+        utils.create_dir(self.alchemistic_directory, self.experiment, "models")
