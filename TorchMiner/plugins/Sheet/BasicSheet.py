@@ -1,15 +1,15 @@
 # -*- coding:utf-8 -*-
 import functools
-import logging
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 
 from TorchMiner.plugins import BasePlugin
 
 pool = ThreadPoolExecutor(1)
-logger = logging.getLogger(__name__)
 
 
 # TODO:Should I make this function a util function of the TorchMiner Package?
+# TODO:Find a better way to accomplish async function
 def _async(fn):
     @functools.wraps(fn)
     def _func(*args, **kwargs):
@@ -17,7 +17,7 @@ def _async(fn):
             try:
                 fn(*args, **kwargs)
             except Exception as e:
-                logger.warn(f"error occured while handle task {e}")
+                print(e)
                 raise e
 
         return pool.submit(_inner, *args, **kwargs)
@@ -34,6 +34,7 @@ class Sheet(BasePlugin):
         super().__init__()
         self.columns = []
         self.cached_row_data = {}
+        self.last_flushed_at = None
 
     def _create_experiment_row(self):
         """Create a row for this experiment"""
@@ -53,6 +54,14 @@ class Sheet(BasePlugin):
 
     def flush(self):
         raise NotImplementedError
+
+    def periodly_flush(self, force=False):
+        now = int(datetime.now().timestamp())
+        # flush every 10 seconds
+        if not force and now - self.last_flushed_at < 10:
+            return
+        self.flush()
+        self.last_flushed_at = now
 
     def onready(self):
         """Called after all the columns are created"""

@@ -11,6 +11,7 @@ class BasePlugin:
         # Can be used for Monkey Patch Operations
         self.miner = miner
         self.logger = self.miner.logger_prototype(self.name)
+        self.logger.info(f"Plugin {self.name} was Prepared.")
 
     # Plugin Data Begin
     def load_state_dict(self, state):

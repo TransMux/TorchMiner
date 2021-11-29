@@ -1,4 +1,6 @@
 # -*- coding:utf-8 -*-
+import math
+
 import httplib2
 
 from TorchMiner.plugins.Sheet import Sheet, _async
@@ -48,14 +50,16 @@ class GoogleSheet(Sheet):
         self.drive = build("drive", "v3", credentials=credentials, http=self.http)
         self.sheet = service.spreadsheets()
         self.drive_folder_id = self._prepare_drive_directory()
-
-    def _meta(self, key):
-        return f"{self.meta_prefix}{key}"
+        self.sheet_progress = {
+            "epoch": "0",
+            "train_percentage": "0%",
+            "val_percentage": "0%",
+        }
 
     def _index_of(self, key):
         search = {
             "dataFilters": [
-                {"developerMetadataLookup": {"metadataKey": self._meta(key)}}
+                {"developerMetadataLookup": {"metadataKey": key}}
             ]
         }
         result = (
@@ -69,7 +73,7 @@ class GoogleSheet(Sheet):
             return result["matchedDeveloperMetadata"][0]["developerMetadata"]["location"]["dimensionRange"][
                 "startIndex"]
 
-    _exists = _index_of
+    _exists = _index_of  # alias
 
     @_async
     def reset_index(self):
@@ -79,11 +83,6 @@ class GoogleSheet(Sheet):
         self.experiment_row_index = self._insert_dimension(
             self.experiment_row_name, self.title_index + 1, "ROWS"
         )
-
-    @_async
-    def prepare(self):
-        self.reset_index()
-        self.update("code", self.code)
 
     @property
     def dark_bg(self):
@@ -182,8 +181,8 @@ class GoogleSheet(Sheet):
         assign_name_request = {
             "createDeveloperMetadata": {
                 "developerMetadata": {
-                    "metadataKey": self._meta(row_name),
-                    "metadataValue": self._meta(row_name),
+                    "metadataKey": row_name,
+                    "metadataValue": row_name,
                     "location": {
                         "dimensionRange": {
                             "sheetId": 0,
@@ -254,7 +253,7 @@ class GoogleSheet(Sheet):
 
         self.sheet.batchUpdate(spreadsheetId=self.sheet_id, body=body).execute()
         self._update_cells(
-            f"{self._num_to_letter(icol_start)}{self.banner_index + 1}", [banner]
+            f"{num_to_letter(icol_start)}{self.banner_index + 1}", [banner]
         )
 
     @_async
@@ -285,7 +284,7 @@ class GoogleSheet(Sheet):
         assign_name_request = {
             "createDeveloperMetadata": {
                 "developerMetadata": {
-                    "metadataKey": self._meta("__minetorch_column__"),
+                    "metadataKey": "__minetorch_column__",
                     "metadataValue": key,
                     "location": {
                         "dimensionRange": {
@@ -303,9 +302,7 @@ class GoogleSheet(Sheet):
         index = self._insert_dimension(
             key, col_index, "COLUMNS", [change_cell_request, assign_name_request]
         )
-        self._update_cells(
-            f"{self._num_to_letter(index)}{self.title_index + 1}", [title]
-        )
+        self._update_cells(f"{num_to_letter(index)}{self.title_index + 1}", [title])
 
     def _update_cells(self, a1, values):
         value_range = {"range": a1, "majorDimension": "ROWS", "values": [values]}
@@ -322,6 +319,7 @@ class GoogleSheet(Sheet):
 
     @_async
     def flush(self):
+        self.logger.debug("GoogleSheet Flushing...")
         irow = self._index_of(self.experiment_row_name)
         column_indices = self._get_column_indices()
         for key, value in self.cached_row_data.items():
@@ -332,8 +330,20 @@ class GoogleSheet(Sheet):
             else:
                 value = getattr(self, f"_process_{processor}")(key, raw_value)
             icol = column_indices[key]
-            self._update_cells(f"{self._num_to_letter(icol)}{irow + 1}", [value])
+            self._update_cells(f"{num_to_letter(icol)}{irow + 1}", [value])
         self.cached_row_data = {}
+
+    def update_progress(self, **kwargs):
+        self.sheet_progress.update(kwargs)
+        # TODO:This Progress should not be divided into two parts
+        progress = f"""
+                    epoch:  {self.sheet_progress["epoch"]}
+                    train progress:  {self.sheet_progress["train_percentage"]}
+                    val progress:  {self.sheet_progress["val_percentage"]}
+                    """
+        self.update("progress", progress)
+        # TODO:This flush method seems to have problems, if flush failed ,information got lost
+        self.periodly_flush()
 
     def _process_upload_image(self, key, value, retry=True):
         try:
@@ -344,15 +354,15 @@ class GoogleSheet(Sheet):
                 return self._process_upload_image(key, value)
             raise e
 
-    def _process_repr(self, key, value):
-        return repr(value)
+    # def _process_repr(self, key, value):
+    #     return repr(value)
 
     def _get_column_indices(self):
         search = {
             "dataFilters": [
                 {
                     "developerMetadataLookup": {
-                        "metadataKey": self._meta("__minetorch_column__")
+                        "metadataKey": "__minetorch_column__"
                     }
                 }
             ]
@@ -407,3 +417,30 @@ class GoogleSheet(Sheet):
             fileId=dir_id, body={"role": "writer", "type": "anyone"}
         ).execute()
         return dir_id
+
+    # Define Hooks
+    def prepare(self, miner, *args, **kwargs):
+        super(GoogleSheet, self).prepare(miner)
+        self.set_miner(self)
+        self.reset_index()
+        self.create_column("code", "Code")
+        self.create_column("progress", "Progress")
+        self.create_column("loss", "Loss")
+        self.update("code", miner.experiment)
+
+    def before_init(self, *args, **kwargs):
+        self.last_flushed_at = 0
+        self.onready()
+        self.flush()
+
+    def before_epoch_start(self, epoch, *args, **kwargs):
+        self.update_progress(epoch=epoch, train_percentage="0%", val_percentage="0%")
+
+    def after_epoch_end(self):
+        self.flush()
+
+    def after_train_iteration_end(self, index, train_iters, *args, **kwargs):
+        self.update_progress(train_percentage=math.ceil(index / train_iters * 100))
+
+    def before_val_iteration_start(self, index, val_iters, *args, **kwargs):
+        self.update_progress(val_percentage=math.ceil(index / val_iters * 100))
