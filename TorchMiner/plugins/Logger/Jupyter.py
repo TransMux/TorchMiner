@@ -59,8 +59,10 @@ class JupyterLogger(BasePlugin):
         raise NotImplementedError("JupyterLogger does Not Support 'debug' Logging.")
 
     def info(self, message, **kwargs):
-
-        self._output(message, "info")
+        if "persist this model as best one" in message:
+            self._output(message, "success")  # TODO:Waiting for a better way to achieve Downward compatibility
+        else:
+            self._output(message, "info")
 
     def warning(self, message):
         self._output(message, "warning")

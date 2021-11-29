@@ -135,7 +135,7 @@ class Miner(object):
         :return:
         """
         for plugin in self.plugins:
-            getattr(plugin, name)(self, **payload)
+            getattr(plugin, name)(miner=self, **payload)  # !!! `miner=self` is totally different with just `self`
 
     def _set_logging_config(self, alchemistic_directory, experiment, logging_format):
         self.log_dir = os.path.join(alchemistic_directory, experiment)

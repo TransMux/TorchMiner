@@ -22,6 +22,8 @@ You can access all Functions of MineTorch simply use `Miner`.
 
  [] Move ***Drawer*** Operations Outside of Miner as a Plugin
  
+ [] A Plugin that can record every output of network for future analysis
+ 
  [] Add Plugin Able And Disable Stat
  
  [] Move Miner Options to yaml File, Add Config Class
