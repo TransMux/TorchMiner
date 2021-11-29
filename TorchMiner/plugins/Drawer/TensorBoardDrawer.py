@@ -1,11 +1,12 @@
 # -*- coding:utf-8 -*-
 import os
 
-from TorchMiner.plugins.Drawer import Drawer
 from tensorboardX import SummaryWriter
 
+from TorchMiner.plugins.Drawer import BasicDrawer
 
-class TensorboardDrawer(Drawer):
+
+class TensorboardDrawer(BasicDrawer):
     """To visualize everything in training process using tensorboard"""
 
     def __init__(self, miner, state=None):

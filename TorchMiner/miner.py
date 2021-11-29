@@ -1,12 +1,13 @@
 import logging
-import math
 import os
 # import time
 # from datetime import datetime
 from pathlib import Path
-from TorchMiner.Logger import ColoredLogger
+
 import torch
 import tqdm
+
+from TorchMiner.Logger import ColoredLogger
 # from IPython.core.display import HTML, display
 #
 # from . import drawers
@@ -76,10 +77,11 @@ class Miner(object):
         """
         # --- Init Plugin ---
         if plugins is None:
-            plugins = []
-        self.plugins = plugins
-        for plugin in self.plugins:
-            plugin.prepare(self)
+            self.plugins = []
+        else:
+            self.plugins = plugins
+            for plugin in self.plugins:
+                plugin.prepare(self)
 
         self.alchemistic_directory = alchemistic_directory  # working dir
         self.model = model
@@ -139,24 +141,6 @@ class Miner(object):
         for plugin in self.plugins:
             getattr(plugin, name)(self, **payload)
 
-    # def _init_sheet(self):
-    #     self.sheet.set_miner(self)
-    #     self.sheet.reset_index()
-    #     self.sheet.create_column("code", "Code")
-    #     self.sheet.create_column("progress", "Progress")
-    #     self.sheet.create_column("loss", "Loss")
-    #     self.sheet.update("code", self.experiment)
-
-    # def create_sheet_column(self, key, title):
-    #     if self.sheet is None:
-    #         return
-    #     self.sheet.create_column(key, title)
-    #
-    # def update_sheet(self, key, value):
-    #     if self.sheet is None:
-    #         return
-    #     self.sheet.update(key, value)
-
     def _set_logging_config(self, alchemistic_directory, experiment, logging_format):
         self.log_dir = os.path.join(alchemistic_directory, experiment)
         log_file = os.path.join(self.log_dir, "log.txt")
@@ -171,14 +155,6 @@ class Miner(object):
             datefmt="%m-%d %H:%M:%S",
             level=logging.INFO,
         )
-
-    # def _create_drawer(self, drawer):
-    #     if drawer == "tensorboard":
-    #         self.drawer = drawers.TensorboardDrawer(self)
-    #     elif drawer == "matplotlib":
-    #         self.drawer = drawers.MatplotlibDrawer(self)
-    #     else:
-    #         self.drawer = drawer
 
     def _init_model(self):
         """resume from some checkpoint"""
@@ -241,10 +217,6 @@ class Miner(object):
                         "stop the process if it is not expected"
                     )
 
-            # load drawer state
-            # if (self.drawer is not None) and ("drawer_state" in checkpoint):
-            #     self.drawer.set_state(checkpoint["drawer_state"])
-
             # load scaler state
             if self.amp and self.amp_scaler:
                 try:
@@ -272,7 +244,7 @@ class Miner(object):
                 self.logger.warning("no GPU detected, will train on CPU.")
             else:
                 self.logger.info(f"found {gpu_count} GPUs, will use all of them to train")
-                devices = list(map(lambda x: f"cuda:{x}", range(gpu_count)))
+                devices = list(range(gpu_count))
                 model.cuda()
                 model = torch.nn.DataParallel(model, devices)
         return model
@@ -289,18 +261,25 @@ class Miner(object):
             train_iters = len(self.train_dataloader)
 
             total_train_loss = 0
-            # percentage = 0
-            total = len(self.train_dataloader)
             self.logger.info(f"start to train epoch {self.current_epoch}")
-            # self._update_progress(
-            #     force=True,
-            #     epoch=self.current_epoch,
-            #     train_percentage="0%",
-            #     val_percentage="0%",
-            # )
             t = self.tqdm(self.train_dataloader)
             for index, data in enumerate(t):
-                train_loss = self._run_train_iteration(index, data, train_iters)
+                self._call_plugins(
+                    "before_train_iteration_start",
+                    data=data,
+                    index=index,
+                    total_iters=train_iters,
+                    iteration=self.current_train_iteration,
+                )
+                train_loss = self._run_train_iteration(data)
+                self._call_plugins(
+                    "after_train_iteration_end",
+                    loss=train_loss,
+                    data=data,
+                    index=index,
+                    total_iters=train_iters,
+                    iteration=self.current_train_iteration,
+                )
                 t.set_postfix({"train loss": train_loss})
                 if int((index + 1) % self.accumulated_iter) == 0:
                     if self.amp and self.amp_scaler:
@@ -313,8 +292,6 @@ class Miner(object):
                     else:
                         self.optimizer.zero_grad(set_to_none=True)
                 total_train_loss += train_loss
-                current_percentage = math.ceil(index / total * 100)
-                # self._update_progress(train_percentage=f"{current_percentage}%")
             # DataLoader End
             if self.amp and self.amp_scaler:
                 self.optimizer.zero_grad()
@@ -329,29 +306,52 @@ class Miner(object):
             )
 
             # Begin eval
-            self.model.eval()
-            total_val_loss = 0
-            total = len(self.val_dataloader)
             if self.val_dataloader:
+                self.model.eval()
+                total_val_loss = 0
                 val_iters = len(self.val_dataloader)
                 with torch.no_grad:
                     self.logger.info(f"validate epoch {self.current_epoch}")
                     t = self.tqdm(self.val_dataloader)
                     for index, data in enumerate(t):
-                        val_loss = self._run_val_iteration(index, data, val_iters)
+                        self._call_plugins(
+                            "before_val_iteration_start",
+                            data=data,
+                            index=index,
+                            val_iters=val_iters,
+                            iteration=self.current_val_iteration,
+                        )
+                        predict, val_loss = self._run_val_iteration(data)
+                        self._call_plugins(
+                            "after_val_iteration_ended",
+                            predicts=predict,
+                            loss=val_loss,
+                            data=data,
+                            index=index,
+                            val_iters=val_iters,
+                            iteration=self.current_val_iteration,
+                        )
                         t.set_postfix({"val loss": val_loss})
                         total_val_loss += val_loss
-                        current_percentage = math.ceil(index / total * 100)
-                    #     self._update_progress(val_percentage=f"{current_percentage}%")
-                    # self._update_progress(
-                    #     force=True, val_percentage=f"{current_percentage}%"
-                    # )
 
                 total_val_loss = total_val_loss / val_iters
                 self.logger.info(
                     f"validation of epoch {self.current_epoch} "
                     f"finished, loss is {total_val_loss}"
                 )
+                # persist model
+                if total_val_loss < self.lowest_val_loss:
+                    self.logger.info(
+                        f"current val loss {total_val_loss} is lower than lowest {self.lowest_val_loss}, "
+                        f"persist this model as best one"
+                    )
+                    self.lowest_val_loss = total_val_loss
+                    self.persist("best")
+                else:
+                    self.persist("latest")
+            else:  # No val Settings
+                total_val_loss = None
+
             # if self.drawer is not None:
             #     png_file = self.drawer.scalars(
             #         self.current_epoch,
@@ -366,18 +366,6 @@ class Miner(object):
             if total_train_loss < self.lowest_train_loss:
                 self.lowest_train_loss = total_train_loss
 
-            if total_val_loss < self.lowest_val_loss:
-                self.logger.info(
-                    f"current val loss {total_val_loss} is lower than lowest {self.lowest_val_loss}, "
-                    f"persist this model as best one"
-                )
-                self.lowest_val_loss = total_val_loss
-                self.persist("best")
-            else:
-                self.persist("latest")
-
-            # self._call_hook_func("before_persist_checkpoint")
-
             if not self.current_epoch % self.persist_stride:
                 self.persist("epoch_{}".format(self.current_epoch))
 
@@ -386,8 +374,6 @@ class Miner(object):
                 self.logger.warning("exceed max epochs, quit!")
                 break
 
-            # if self.sheet:
-            #     self.sheet.flush()
             self._call_plugins(
                 "after_epoch_end",
                 train_loss=total_train_loss,
@@ -395,42 +381,27 @@ class Miner(object):
                 epoch=self.current_epoch,
             )
 
-    def _run_train_iteration(self, index, data, train_iters):
+    def _run_train_iteration(self, data):
         self.status = "train"
         self.current_train_iteration += 1
-        self._call_plugins(
-            "before_train_iteration_start",
-            data=data,
-            index=index,
-            total_iters=train_iters,
-            iteration=self.current_train_iteration,
-        )
         if self.amp and self.amp_scaler:
             with torch.cuda.amp.autocast():
                 _, loss = self._forward(data)
-                seperate_loss = loss / self.accumulated_iter
-            seperate_loss = self.scaler.scale(seperate_loss)
+                separate_loss = loss / self.accumulated_iter
+            separate_loss = self.scaler.scale(separate_loss)
         else:
             _, loss = self._forward(data)
-            seperate_loss = loss / self.accumulated_iter
-        seperate_loss.backward()
+            separate_loss = loss / self.accumulated_iter
+        separate_loss.backward()
         loss = loss.detach().cpu().item()
-        # if self.verbose:
-        #     self.logger.info(
-        #         "[train {}/{}/{}] loss {}".format(
-        #             self.current_epoch, index, train_iters, loss
-        #         )
-        #     )
-
-        self._call_plugins(
-            "after_train_iteration_end",
-            loss=loss,
-            data=data,
-            index=index,
-            total_iters=train_iters,
-            iteration=self.current_train_iteration,
-        )
         return loss
+
+    def _run_val_iteration(self, data):
+        self.status = "val"
+        self.current_val_iteration += 1
+        predict, loss = self._forward(data)
+        loss = loss.detach().cpu().item()
+        return predict, loss
 
     def _forward(self, data):
         if self.forward_fn:
@@ -440,42 +411,9 @@ class Miner(object):
             loss = self.loss_func(predict, data[1].to(self.devices))
             return predict, loss
 
-    def _run_val_iteration(self, index, data, val_iters):
-        self.status = "val"
-        self.current_val_iteration += 1
-        self._call_plugins(
-            "before_val_iteration_start",
-            data=data,
-            index=index,
-            total_iters=val_iters,
-            iteration=self.current_val_iteration,
-        )
-        predict, loss = self._forward(data)
-        loss = loss.detach().cpu().item()
-        # if self.verbose:
-        #     self.logger.info(
-        #         "[val {}/{}/{}] loss {}".format(
-        #             self.current_epoch, index, val_iters, loss
-        #         )
-        #     )
-        self._call_plugins(
-            "after_val_iteration_ended",
-            predicts=predict,
-            loss=loss,
-            data=data,
-            index=index,
-            total_iters=val_iters,
-            iteration=self.current_val_iteration,
-        )
-        return loss
-
     def persist(self, name):
         """save the model to disk"""
-        self._call_plugins("before_checkpoint_persisted")
-        # if self.drawer is not None:
-        #     drawer_state = self.drawer.get_state()
-        # else:
-        #     drawer_state = {}
+        self._call_plugins("before_checkpoint_persisted", checkpoint_name=name)
 
         if isinstance(self.model, torch.nn.DataParallel):
             model_state_dict = self.model.module.state_dict()
@@ -490,7 +428,6 @@ class Miner(object):
             "val_iteration": self.current_val_iteration,
             "lowest_train_loss": self.lowest_train_loss,
             "lowest_val_loss": self.lowest_val_loss,
-            # "drawer_state": drawer_state,
         }
 
         for plugin in self.plugins:
@@ -503,7 +440,7 @@ class Miner(object):
         modelpath = self._standard_model_path(name)
         torch.save(state, modelpath)
         self.logger.info(f"save checkpoint to {self._standard_model_path(name)}")
-        self._call_plugins("after_checkpoint_persisted", modelpath=modelpath)
+        self._call_plugins("after_checkpoint_persisted", modelpath=modelpath, checkpoint_name=name)
 
     def _standard_model_path(self, model_name):
         return os.path.join(self.models_dir, f"{model_name}.pth.tar")
@@ -539,26 +476,3 @@ class Miner(object):
         utils.create_dir("")
         utils.create_dir(self.experiment)
         utils.create_dir(self.experiment, "models")
-
-#     def periodly_flush(self, force=False):
-#         if self.sheet is None:
-#             return
-#         now = int(datetime.now().timestamp())
-#         # flush every 10 seconds
-#         if not force and now - self.last_flushed_at < 10:
-#             return
-#         self.sheet.flush()
-#         self.last_flushed_at = now
-#
-#     def _update_progress(self, force=False, **kwargs):
-#         if self.sheet is None:
-#             return
-#
-#         self.sheet_progress.update(kwargs)
-#         progress = f"""
-#          epoch:  {self.sheet_progress.get('epoch')}
-# train progress:  {self.sheet_progress.get('train_percentage')}
-#   val progress:  {self.sheet_progress.get('val_percentage')}
-# """
-#         self.sheet.update("progress", progress)
-#         self.periodly_flush(force)

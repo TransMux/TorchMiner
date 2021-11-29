@@ -4,7 +4,7 @@ import os
 from TorchMiner import BasePlugin
 
 
-class Drawer(BasePlugin):
+class BasicDrawer(BasePlugin):
     """To visualize everything in training process"""
 
     def __init__(self, state=None):
@@ -15,8 +15,8 @@ class Drawer(BasePlugin):
         else:
             self.state = state
 
-    def set_miner(self, miner):
-        super(Drawer, self).set_miner(miner)
+    def prepare(self, miner, *args, **kwargs):
+        super(BasicDrawer, self).prepare(miner)
         self.step_file = os.path.join(
             miner.alchemistic_directory, miner.experiment, ".drawer_step"
         )

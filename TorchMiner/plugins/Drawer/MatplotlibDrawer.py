@@ -1,14 +1,16 @@
 # -*- coding:utf-8 -*-
-import os
-from matplotlib.figure import Figure
-from TorchMiner.plugins.Drawer import Drawer
 import _pickle as pickle
+import os
+
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
+
+from TorchMiner.plugins.Drawer import BasicDrawer
 
 
-class MatplotlibDrawer(Drawer):
-    def __init__(self, miner, state=None):
-        super().__init__(miner, state)
+class MatplotlibDrawer(BasicDrawer):
+    def __init__(self, miner):
+        super(MatplotlibDrawer, self).__init__(miner)
         self.graph_dir = os.path.join(
             self.miner.alchemistic_directory, self.miner.experiment, "graphs"
         )
@@ -27,6 +29,8 @@ class MatplotlibDrawer(Drawer):
         ]
         if not os.path.isdir(self.graph_dir):
             os.mkdir(self.graph_dir)
+        # Load from previous
+        # TODO: Need to add into state_dict?
         if os.path.isfile(self.data_file):
             with open(self.data_file, "rb") as f:
                 self.graph_data = pickle.load(f)
