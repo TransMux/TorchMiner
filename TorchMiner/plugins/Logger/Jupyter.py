@@ -16,15 +16,16 @@ class JupyterLogger(BasePlugin):
         "warning": ["⚠️", "#d46b08"],
     }
 
-    def __init__(self, name):
+    def __init__(self):
         super(JupyterLogger, self).__init__()
-        self.name = name
         # self.log_dir = ""
         # TODO:Do you need to redirect the original log into a file when using Jupyter Logger?
 
     def prepare(self, miner, *args, **kwargs):
         super(JupyterLogger, self).prepare(miner)
-        if not miner.in_notebook:
+
+    def before_logger_init(self, *args, **kwargs):
+        if not self.miner.in_notebook:
             self.logger.critical("Miner.in_notebook was set to False, but JupyterLogger will still patch on it.")
         self.miner.logger_prototype = JupyterLogger
 
@@ -33,7 +34,7 @@ class JupyterLogger(BasePlugin):
             HTML(
                 f'<div style="font-size: 12px; color: {self.config[mode][1]}">'
                 f'⏰ {time.strftime("%b %d - %H:%M:%S")} >>> '
-                f"{self.config[mode][0]} [{self.name}]{message}"
+                f"{self.config[mode][0]} {message}"
                 "</div>"
             )
         )
