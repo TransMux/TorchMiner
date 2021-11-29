@@ -10,8 +10,13 @@ TorchMiner is designed to automatic process the training ,evaluating and testing
 You can access all Functions of MineTorch simply use `Miner`.
 
 ## Project ToDo
+ [!] compatible with paddlepaddle
 
- [] Make Console Output a plugin 
+ [!!!] Test Cases
+ 
+ [!] Add A thread to accept CLI input when training
+ 
+ [!] Abstract Miner process, for easier patches
  
  [] Abstract Plugin Manager
 

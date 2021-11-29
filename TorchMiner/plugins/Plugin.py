@@ -1,6 +1,3 @@
-from TorchMiner.Logger import ColoredLogger
-
-
 class BasePlugin:
     def __init__(self):
         self.name = self.__class__.__name__
@@ -10,8 +7,6 @@ class BasePlugin:
     def prepare(self, miner, *args, **kwargs):
         # Can be used for Monkey Patch Operations
         self.miner = miner
-        self.logger = self.miner.logger_prototype(self.name)
-        self.logger.info(f"Plugin {self.name} was Prepared.")
 
     # Plugin Data Begin
     def load_state_dict(self, state):
@@ -66,6 +61,11 @@ class BasePlugin:
 
     def before_logger_init(self, *args, **kwargs):
         pass
+
+    def after_logger_init(self, *args, **kwargs):
+        # Default register logger
+        self.logger = self.miner.logger_prototype(self.name)
+        self.logger.info(f"Plugin {self.name} was Prepared.", type="success")  # TODO:How to compatible up
     # Hook Functions end
 
     # def print_txt(self, printable, name):

@@ -1,16 +1,11 @@
 import logging
 import os
-# import time
-# from datetime import datetime
 from pathlib import Path
 
 import torch
 import tqdm
 
 from TorchMiner.Logger import ColoredLogger
-# from IPython.core.display import HTML, display
-#
-# from . import drawers
 from . import utils
 
 
@@ -90,8 +85,6 @@ class Miner(object):
         self.experiment = experiment
         self.logger_prototype = ColoredLogger
         # Hook Point "before_logger_init" Added in v0.2.3
-        self._call_plugins("before_logger_init")
-        self.logger = self.logger_prototype("Miner")
         self.val_dataloader = val_dataloader
         self.gpu = gpu
         self.in_notebook = in_notebook
@@ -124,6 +117,9 @@ class Miner(object):
             self.scaler = torch.cuda.amp.GradScaler()
 
         self.tqdm = tqdm.tqdm
+        self._call_plugins("before_logger_init")
+        self.logger = self.logger_prototype("Miner")
+        self._call_plugins("after_logger_init")
         # --- Before Init ---
         self._call_plugins("before_init")
         self._init_model()
@@ -186,6 +182,7 @@ class Miner(object):
 
         if checkpoint_path is not None:
             msg = f"Start to load checkpoint {checkpoint_path}"
+            # TODO:After Loading Checkpoint, output basic information
             self.logger.info(msg)
             checkpoint = torch.load(checkpoint_path)
             # Read Train Process From Resumed Data

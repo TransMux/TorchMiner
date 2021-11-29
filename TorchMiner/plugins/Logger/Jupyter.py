@@ -16,7 +16,9 @@ class JupyterLogger(BasePlugin):
         "warning": ["⚠️", "#d46b08"],
     }
 
-    def __init__(self):
+    def __init__(self, name="", hide_name=True):  # name is set here to be compatible with DefaultLogger
+        self.name = name
+        self.hide_name = hide_name
         super(JupyterLogger, self).__init__()
         # self.log_dir = ""
         # TODO:Do you need to redirect the original log into a file when using Jupyter Logger?
@@ -25,24 +27,39 @@ class JupyterLogger(BasePlugin):
         super(JupyterLogger, self).prepare(miner)
 
     def before_logger_init(self, *args, **kwargs):
-        if not self.miner.in_notebook:
-            self.logger.critical("Miner.in_notebook was set to False, but JupyterLogger will still patch on it.")
         self.miner.logger_prototype = JupyterLogger
 
+    def after_logger_init(self, *args, **kwargs):
+        super(JupyterLogger, self).after_logger_init()
+        if not self.miner.in_notebook:
+            self.logger.critical("Miner.in_notebook was set to False, but JupyterLogger will still patch on it.")
+
     def _output(self, message, mode: str):
-        display(
-            HTML(
-                f'<div style="font-size: 12px; color: {self.config[mode][1]}">'
-                f'⏰ {time.strftime("%b %d - %H:%M:%S")} >>> '
-                f"{self.config[mode][0]} {message}"
-                "</div>"
+        # TODO Add More Fancy things in it, such as bold fonts and underlines or highlights
+        if self.hide_name:
+            display(
+                HTML(
+                    f'<div style="font-size: 12px; color: {self.config[mode][1]}">'
+                    f'⏰ {time.strftime("%b %d - %H:%M:%S")} >>> '
+                    f"{self.config[mode][0]} {message}"
+                    "</div>"
+                )
             )
-        )
+        else:
+            display(
+                HTML(
+                    f'<div style="font-size: 12px; color: {self.config[mode][1]}">'
+                    f'⏰ {time.strftime("%b %d - %H:%M:%S")} >>> '
+                    f"{self.config[mode][0]} [{self.name}] {message}"
+                    "</div>"
+                )
+            )
 
     def debug(self, message):
         raise NotImplementedError("JupyterLogger does Not Support 'debug' Logging.")
 
-    def info(self, message):
+    def info(self, message, **kwargs):
+
         self._output(message, "info")
 
     def warning(self, message):
@@ -65,7 +82,8 @@ class JupyterLogger(BasePlugin):
 
 
 class JupyterTqdm(BasePlugin):
-    def prepare(self, miner, *args, **kwargs):
-        if not miner.in_notebook:
+    def after_logger_init(self, *args, **kwargs):
+        super(JupyterTqdm, self).after_logger_init()
+        if not self.miner.in_notebook:
             self.logger.critical("Miner.in_notebook was set to False, but JupyterTqdm will still patch on it.")
         self.miner.tqdm = tqdm.notebook.tqdm
