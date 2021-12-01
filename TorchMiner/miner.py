@@ -1,4 +1,3 @@
-import logging
 import os
 from pathlib import Path
 
@@ -6,6 +5,7 @@ import torch
 import tqdm
 
 from TorchMiner.Logger import ColoredLogger
+from TorchMiner.plugins import PluginManager
 from . import utils
 
 
@@ -71,12 +71,7 @@ class Miner(object):
         :param amp_scaler:
         """
         # --- Init Plugin ---
-        if plugins is None:
-            self.plugins = []
-        else:
-            self.plugins = plugins
-            for plugin in self.plugins:
-                plugin.prepare(self)
+        self.plugins = PluginManager(self, plugins)
 
         self.alchemistic_directory = alchemistic_directory  # working dir
         self.model = model
@@ -117,40 +112,17 @@ class Miner(object):
             self.scaler = torch.cuda.amp.GradScaler()
 
         self.tqdm = tqdm.tqdm
-        self._call_plugins("before_logger_init")
+        self.plugins.call("before_logger_init")
         self.logger = self.logger_prototype("Miner")
-        self._call_plugins("after_logger_init")
+        self.plugins.call("after_logger_init")
         # --- Before Init ---
-        self._call_plugins("before_init")
+        self.plugins.call("before_init")
         self._init_model()
         self.status = "init"
         # --- After Init ---
-        self._call_plugins("after_init")
+        self.plugins.call("after_init")
 
-    def _call_plugins(self, name, **payload):
-        """
-        Call Hook Functions
-        :param name: Hook Name
-        :param payload: extra prams in specific Stage
-        :return:
-        """
-        for plugin in self.plugins:
-            getattr(plugin, name)(miner=self, **payload)  # !!! `miner=self` is totally different with just `self`
 
-    def _set_logging_config(self, alchemistic_directory, experiment, logging_format):
-        self.log_dir = os.path.join(alchemistic_directory, experiment)
-        log_file = os.path.join(self.log_dir, "log.txt")
-        logging_format = (
-            logging_format
-            if logging_format is not None
-            else "%(levelname)s %(asctime)s %(message)s"  # Default
-        )
-        logging.basicConfig(
-            filename=log_file,
-            format=logging_format,
-            datefmt="%m-%d %H:%M:%S",
-            level=logging.INFO,
-        )
 
     def _init_model(self):
         """resume from some checkpoint"""
@@ -224,10 +196,7 @@ class Miner(object):
                         "stop the process if it is not expected"
                     )
 
-            # load plugin states
-            for plugin in self.plugins:
-                key = f"__plugin.{plugin.__class__.__name__}__"
-                plugin.load_state_dict(checkpoint.get(key, {}))
+            self.plugins.load(checkpoint)
 
             self.logger.info(f"Checkpoint {checkpoint_path} Successfully Loaded")
         self.model = self._parallel_model(self.model)
@@ -253,7 +222,7 @@ class Miner(object):
         """
         while True:
             self.current_epoch += 1
-            self._call_plugins("before_epoch_start", epoch=self.current_epoch)
+            self.plugins.call("before_epoch_start", epoch=self.current_epoch)
             self.model.train()  # Set Train Mode
             train_iters = len(self.train_dataloader)
 
@@ -261,7 +230,7 @@ class Miner(object):
             self.logger.info(f"start to train epoch {self.current_epoch}")
             t = self.tqdm(self.train_dataloader)
             for index, data in enumerate(t):
-                self._call_plugins(
+                self.plugins.call(
                     "before_train_iteration_start",
                     data=data,
                     index=index,
@@ -269,7 +238,7 @@ class Miner(object):
                     iteration=self.current_train_iteration,
                 )
                 train_loss = self._run_train_iteration(data)
-                self._call_plugins(
+                self.plugins.call(
                     "after_train_iteration_end",
                     loss=train_loss,
                     data=data,
@@ -311,7 +280,7 @@ class Miner(object):
                     self.logger.info(f"validate epoch {self.current_epoch}")
                     t = self.tqdm(self.val_dataloader)
                     for index, data in enumerate(t):
-                        self._call_plugins(
+                        self.plugins.call(
                             "before_val_iteration_start",
                             data=data,
                             index=index,
@@ -319,7 +288,7 @@ class Miner(object):
                             iteration=self.current_val_iteration,
                         )
                         predict, val_loss = self._run_val_iteration(data)
-                        self._call_plugins(
+                        self.plugins.call(
                             "after_val_iteration_ended",
                             predicts=predict,
                             loss=val_loss,
@@ -365,11 +334,11 @@ class Miner(object):
                 self.persist("epoch_{}".format(self.current_epoch))
 
             if self.current_epoch >= self.max_epochs:
-                self._call_plugins("before_quit")
+                self.plugins.call("before_quit")
                 self.logger.warning("exceed max epochs, quit!")
                 break
 
-            self._call_plugins(
+            self.plugins.call(
                 "after_epoch_end",
                 train_loss=total_train_loss,
                 val_loss=total_val_loss,
@@ -408,7 +377,7 @@ class Miner(object):
 
     def persist(self, name):
         """save the model to disk"""
-        self._call_plugins("before_checkpoint_persisted", checkpoint_name=name)
+        self.plugins.call("before_checkpoint_persisted", checkpoint_name=name)
 
         if isinstance(self.model, torch.nn.DataParallel):
             model_state_dict = self.model.module.state_dict()
@@ -435,7 +404,7 @@ class Miner(object):
         modelpath = self._standard_model_path(name)
         torch.save(state, modelpath)
         self.logger.info(f"save checkpoint to {self._standard_model_path(name)}")
-        self._call_plugins("after_checkpoint_persisted", modelpath=modelpath, checkpoint_name=name)
+        self.plugins.call("after_checkpoint_persisted", modelpath=modelpath, checkpoint_name=name)
 
     def _standard_model_path(self, model_name):
         return os.path.join(self.models_dir, f"{model_name}.pth.tar")

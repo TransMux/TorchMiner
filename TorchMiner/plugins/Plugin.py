@@ -103,3 +103,51 @@ class BasePlugin:
     #     return self.miner.drawer.scalars(
     #         self.miner.current_epoch, values, f"{self.prefix}{graph}"
     #     )
+
+
+class PluginManager:
+    def __init__(self, miner, plugins):
+        self.miner = miner
+        if plugins:
+            self.plugins = plugins
+            self.plugin_names = [i.__class__.name for i in self.plugins]
+        else:
+            self.plugins = []
+        self.check_requirements()
+
+    def check_requirements(self):
+        pass
+
+    def status(self):
+        """
+        Print the Status of all registered Plugins
+        :return:
+        """
+        pass
+
+    def register(self):
+        """
+        Register Plugins from a given module list
+        :return:
+        """
+
+    def call(self, hook, **payload):
+        """
+        Call Hook Functions
+        :return:
+        """
+        for plugin in self.plugins:
+            getattr(plugin, hook)(miner=self, **payload)  # !!! `miner=self` is totally different with just `self`
+
+    def prepare(self):
+        """
+        prepare a given Plugin
+        :return:
+        """
+        pass
+
+    def load(self, checkpoint):
+        # load plugin states
+        for plugin in self.plugins:
+            key = f"__plugin.{plugin.__class__.__name__}__"
+            plugin.load_state_dict(checkpoint.get(key, {}))
