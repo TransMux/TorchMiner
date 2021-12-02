@@ -70,9 +70,6 @@ class Miner(object):
         :param amp:
         :param amp_scaler:
         """
-        # --- Init Plugin ---
-        self.plugins = PluginManager(self, plugins)
-
         self.alchemistic_directory = alchemistic_directory  # working dir
         self.model = model
         self.optimizer = optimizer
@@ -112,17 +109,19 @@ class Miner(object):
             self.scaler = torch.cuda.amp.GradScaler()
 
         self.tqdm = tqdm.tqdm
-        self.plugins.call("before_logger_init")
-        self.logger = self.logger_prototype("Miner")
-        self.plugins.call("after_logger_init")
+        # --- Init Plugin ---
+        self.plugins = PluginManager(self, plugins)
+        self.logger = self.get_logger("Miner")
         # --- Before Init ---
+        self.status = "init"
         self.plugins.call("before_init")
         self._init_model()
-        self.status = "init"
         # --- After Init ---
         self.plugins.call("after_init")
 
-
+    @staticmethod
+    def get_logger(name):
+        return ColoredLogger(name)
 
     def _init_model(self):
         """resume from some checkpoint"""
@@ -139,8 +138,7 @@ class Miner(object):
                 checkpoint_path = self._search_model_file("latest")
             else:
                 checkpoint_path = None
-                msg = "Could not find checkpoint to resume, " "train from scratch"
-                self.logger.warning(msg)
+                self.logger.warning("Could not find checkpoint to resume, " "train from scratch")
         elif isinstance(self.resume, str):  # specify model file name
             checkpoint_path = self._search_model_file(self.resume)
         elif isinstance(self.resume, int):  # specify train epoch
@@ -153,9 +151,8 @@ class Miner(object):
             raise Exception(f"Could not find model {self.resume}")
 
         if checkpoint_path is not None:
-            msg = f"Start to load checkpoint {checkpoint_path}"
             # TODO:After Loading Checkpoint, output basic information
-            self.logger.info(msg)
+            self.logger.info(f"Start to load checkpoint {checkpoint_path}")
             checkpoint = torch.load(checkpoint_path)
             # Read Train Process From Resumed Data
             self.current_epoch = checkpoint.get("epoch", 0)
@@ -222,14 +219,13 @@ class Miner(object):
         """
         while True:
             self.current_epoch += 1
-            self.plugins.call("before_epoch_start", epoch=self.current_epoch)
+            self.plugins.call("before_train_epoch_start", epoch=self.current_epoch)
             self.model.train()  # Set Train Mode
             train_iters = len(self.train_dataloader)
 
             total_train_loss = 0
             self.logger.info(f"start to train epoch {self.current_epoch}")
-            t = self.tqdm(self.train_dataloader)
-            for index, data in enumerate(t):
+            for index, data in enumerate(self.tqdm(self.train_dataloader)):
                 self.plugins.call(
                     "before_train_iteration_start",
                     data=data,
@@ -271,8 +267,18 @@ class Miner(object):
                 f"loss is {total_train_loss}"
             )
 
+            self.plugins.call(
+                "after_train_epoch_end",
+                train_loss=total_train_loss,
+                epoch=self.current_epoch,
+            )
+
             # Begin eval
             if not self.current_epoch % self.eval_epoch and self.val_dataloader:
+                self.plugins.call(
+                    "before_val_epoch_start",
+                    epoch=self.current_epoch,
+                )
                 self.model.eval()
                 total_val_loss = 0
                 val_iters = len(self.val_dataloader)
@@ -313,8 +319,12 @@ class Miner(object):
                     )
                     self.lowest_val_loss = total_val_loss
                     self.persist("best")
-            else:  # No val Settings
-                total_val_loss = None
+
+                self.plugins.call(
+                    "after_val_epoch_end",
+                    val_loss=total_train_loss,
+                    epoch=self.current_epoch,
+                )
             self.persist("latest")
             # if self.drawer is not None:
             #     png_file = self.drawer.scalars(
@@ -337,13 +347,6 @@ class Miner(object):
                 self.plugins.call("before_quit")
                 self.logger.warning("exceed max epochs, quit!")
                 break
-
-            self.plugins.call(
-                "after_epoch_end",
-                train_loss=total_train_loss,
-                val_loss=total_val_loss,
-                epoch=self.current_epoch,
-            )
 
     def _run_train_iteration(self, data):
         self.status = "train"  # TODO:self.status Unused
@@ -394,9 +397,7 @@ class Miner(object):
             "lowest_val_loss": self.lowest_val_loss,
         }
 
-        for plugin in self.plugins:
-            key = f"__plugin.{plugin.__class__.__name__}__"
-            state[key] = plugin.state_dict()
+        state.update(self.plugins.save())
 
         if self.amp and self.amp_scaler:
             state["scaler"] = self.scaler.state_dict()

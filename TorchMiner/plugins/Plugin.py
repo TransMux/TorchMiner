@@ -27,12 +27,21 @@ class BasePlugin:
 
     # Hook Functions Begin
     def before_init(self, *args, **kwargs):
-        pass
+        self.logger = self.miner.get_logger(self.name)
 
     def after_init(self, *args, **kwargs):
         pass
 
-    def before_epoch_start(self, *args, **kwargs):
+    def before_train_epoch_start(self, *args, **kwargs):
+        pass
+
+    def after_train_epoch_end(self, *args, **kwargs):
+        pass
+
+    def before_val_epoch_start(self, *args, **kwargs):
+        pass
+
+    def after_val_epoch_end(self, *args, **kwargs):
         pass
 
     def before_quit(self, *args, **kwargs):
@@ -59,13 +68,6 @@ class BasePlugin:
     def after_checkpoint_persisted(self, *args, **kwargs):
         pass
 
-    def before_logger_init(self, *args, **kwargs):
-        pass
-
-    def after_logger_init(self, *args, **kwargs):
-        # Default register logger
-        self.logger = self.miner.logger_prototype(self.name)
-        self.logger.info(f"Plugin {self.name} was Prepared.", type="success")  # TODO:How to compatible up
     # Hook Functions end
 
     # def print_txt(self, printable, name):
@@ -108,22 +110,36 @@ class BasePlugin:
 class PluginManager:
     def __init__(self, miner, plugins):
         self.miner = miner
+        self.logger = miner.get_logger("PluginManager")
         if plugins:
             self.plugins = plugins
             self.plugin_names = [i.__class__.name for i in self.plugins]
         else:
             self.plugins = []
         self.check_requirements()
+        self.prepare()
 
     def check_requirements(self):
-        pass
+        """
+        Check Requirements of each Plugins
+         - Requirements are set in restrict string
+        :return:
+        """
+        for p in self.plugins:
+            self.logger.debug(f"Checking Requirements of {p}.")
+            for r in p:
+                if r not in self.plugin_names:
+                    self.logger.error(f"Requirement {r} of {p} is not Find.")
+            else:
+                self.logger.info("Successfully Passed Plugin Requirements Check with no Errors.")
+        # TODO: Try to import Unmet needs
 
     def status(self):
         """
         Print the Status of all registered Plugins
         :return:
         """
-        pass
+        self.logger.info(f"Registered Plugins:{self.plugins}")
 
     def register(self):
         """
@@ -144,10 +160,17 @@ class PluginManager:
         prepare a given Plugin
         :return:
         """
-        pass
+        for p in self.plugins:
+            p.prepare(self.miner)
 
     def load(self, checkpoint):
         # load plugin states
         for plugin in self.plugins:
             key = f"__plugin.{plugin.__class__.__name__}__"
             plugin.load_state_dict(checkpoint.get(key, {}))
+
+    def save(self):
+        temp = {}
+        for p in self.plugins:
+            temp[f"__plugin.{p.__class__.__name__}__"] = p.state_dict()
+        return temp

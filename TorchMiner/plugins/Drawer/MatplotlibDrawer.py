@@ -5,30 +5,32 @@ import os
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 
-from TorchMiner.plugins.Drawer import BasicDrawer
+from TorchMiner.plugins import BasePlugin
 
 
-class MatplotlibDrawer(BasicDrawer):
-    def __init__(self, miner):
-        super(MatplotlibDrawer, self).__init__(miner)
+class MatplotlibDrawer(BasePlugin):
+    colors = [
+        "blue",
+        "orange",
+        "green",
+        "red",
+        "purple",
+        "brown",
+        "pink",
+        "gray",
+        "olive",
+        "cyan",
+    ]
+
+    def prepare(self, miner, *args, **kwargs):
+        super(MatplotlibDrawer, self).prepare(miner)
         self.graph_dir = os.path.join(
             self.miner.alchemistic_directory, self.miner.experiment, "graphs"
         )
         self.data_file = os.path.join(self.graph_dir, ".graphs.pickle")
-        self.colors = [
-            "blue",
-            "orange",
-            "green",
-            "red",
-            "purple",
-            "brown",
-            "pink",
-            "gray",
-            "olive",
-            "cyan",
-        ]
         if not os.path.isdir(self.graph_dir):
             os.mkdir(self.graph_dir)
+
         # Load from previous
         # TODO: Need to add into state_dict?
         if os.path.isfile(self.data_file):
