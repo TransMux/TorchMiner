@@ -8,16 +8,3 @@ Packaged Using [Poetry](https://python-poetry.org/)
 TorchMiner is designed to automatic process the training ,evaluating and testing process for PyTorch DeepLearning,with a simple API.
 
 You can access all Functions of MineTorch simply use `Miner`.
-
-## Project ToDo
- [!] compatible with paddlepaddle
-
- [!!!] Test Cases
- 
- [!] Add A thread to accept CLI input when training
- 
- [] Move Miner Options to yaml File, Add Config Class
- 
- Now Plugins only supports output functions, they can't modify or change the data of the Miner class.Any Ideas? I am glad to know.
- 
- [] Write about my design concept
