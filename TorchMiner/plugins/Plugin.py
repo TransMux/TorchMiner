@@ -1,4 +1,6 @@
 class BasePlugin:
+    requirements = []
+
     def __init__(self):
         self.name = self.__class__.__name__
         self.miner = None
@@ -104,14 +106,15 @@ class BasePlugin:
 
 
 class PluginManager:
-    def __init__(self, miner, plugins):
+    def __init__(self, miner, plugins: list):
         self.miner = miner
         self.logger = miner.get_logger("PluginManager")
         if plugins:
             self.plugins = plugins
-            self.plugin_names = [i.__class__.name for i in self.plugins]
+            self.plugin_names = [i.name for i in self.plugins]
         else:
             self.plugins = []
+        self.maper = dict(zip(self.plugin_names, self.plugins))
         self.check_requirements()
         self.prepare()
 
@@ -123,7 +126,7 @@ class PluginManager:
         """
         for p in self.plugins:
             self.logger.debug(f"Checking Requirements of {p}.")
-            for r in p:
+            for r in p.requirements:
                 if r not in self.plugin_names:
                     self.logger.error(f"Requirement {r} of {p} is not Find.")
             else:
@@ -170,3 +173,11 @@ class PluginManager:
         for p in self.plugins:
             temp[f"__plugin.{p.__class__.__name__}__"] = p.state_dict()
         return temp
+
+    def get(self, name):
+        """
+        Get A Plugin From Plugin Manager.
+        :param string name: Plugin name
+        :return:
+        """
+        return self.maper[name]

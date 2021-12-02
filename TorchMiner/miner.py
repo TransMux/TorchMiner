@@ -371,7 +371,13 @@ class Miner(object):
         return predict, loss
 
     def _forward(self, data):
-        if self.forward_fn:  # TODO:Use SubClass rather than functions
+        """
+        A Function to calculate Network Forward results.
+        The custom Forward_fn should return Network Output and Loss together.
+        :param data:
+        :return:
+        """
+        if self.forward_fn:
             return self.forward_fn(self, data)
         else:
             predict = self.model(data[0].to(self.devices))
