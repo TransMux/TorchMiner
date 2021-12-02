@@ -16,21 +16,19 @@ class Miner(object):
             model,
             optimizer,
             loss_func,
-            experiment="geass",
+            experiment,
             train_dataloader=None,
             val_dataloader=None,
             resume=True,
             eval_epoch=1,
             persist_epoch=1,
             gpu=True,
-            # drawer="matplotlib",
             max_epochs=9999999,
             in_notebook=False,
             plugins=None,
             accumulated_iter=1,
             ignore_optimizer_resume=False,
             forward=None,
-            verbose=False,
             amp=False,
             amp_scaler=True,
     ):
@@ -66,7 +64,6 @@ class Miner(object):
         :param accumulated_iter:
         :param ignore_optimizer_resume:
         :param forward:
-        :param verbose: # TODO:verbose是用来干嘛的
         :param amp:
         :param amp_scaler:
         """
@@ -76,21 +73,16 @@ class Miner(object):
         self.train_dataloader = train_dataloader
         self.experiment = experiment
         self.logger_prototype = ColoredLogger
-        # Hook Point "before_logger_init" Added in v0.2.3
         self.val_dataloader = val_dataloader
         self.gpu = gpu
         self.in_notebook = in_notebook
         self.ignore_optimizer_resume = ignore_optimizer_resume
-
         self._create_dirs()
         self.devices = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.experiment_dir = os.path.join(alchemistic_directory, self.experiment)
         self.models_dir = os.path.join(alchemistic_directory, self.experiment, "models")
-        # self._create_drawer(drawer)
         self.accumulated_iter = float(accumulated_iter)
-
         self.loss_func = loss_func
-
         self.resume = resume
         self.eval_epoch = eval_epoch
         self.persist_stride = persist_epoch
@@ -101,14 +93,12 @@ class Miner(object):
         self.current_val_iteration = 0
         self.max_epochs = max_epochs
         self.forward_fn = forward
-        self.verbose = verbose
         self.amp = amp
-
         self.amp_scaler = amp_scaler
         if self.amp and self.amp_scaler:
             self.scaler = torch.cuda.amp.GradScaler()
-
         self.tqdm = tqdm.tqdm
+
         # --- Init Plugin ---
         self.plugins = PluginManager(self, plugins)
         self.logger = self.get_logger("Miner")

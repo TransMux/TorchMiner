@@ -7,8 +7,6 @@ from TorchMiner import BasePlugin
 
 class RegressionAccuracy(BasePlugin):
     def before_train_epoch_start(self, *args, **kwargs):
-        # TODO:It's weird to get Miner here, if i dont want miner and epoch, how should i write argument list?
-        # TODO:Why Dont I Just set these Attributes in Miner?
         self.predicts = []
         self.label = []
 

@@ -29,7 +29,6 @@ def create_dir(directory, *args):
 
     current_dir = directory
     for dir_name in args:
-        # TODO:os.path.join
         current_dir = os.path.join(current_dir, dir_name)
     if not os.path.isdir(current_dir):
         os.mkdir(current_dir)

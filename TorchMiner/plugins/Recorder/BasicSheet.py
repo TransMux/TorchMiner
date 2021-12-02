@@ -8,7 +8,6 @@ from TorchMiner.plugins import BasePlugin
 pool = ThreadPoolExecutor(1)
 
 
-# TODO:Should I make this function a util function of the TorchMiner Package?
 # TODO:Find a better way to accomplish async function
 def _async(fn):
     @functools.wraps(fn)

@@ -72,7 +72,6 @@ class JupyterLogger(BasePlugin):
         self._output(message, "critical")
 
     def before_train_epoch_start(self, *args, **kwargs):
-        # TODO: indicate params
         display(
             HTML(
                 '<div style="display: flex; justify-content: center;">'
