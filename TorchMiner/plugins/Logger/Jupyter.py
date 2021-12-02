@@ -9,6 +9,7 @@ from TorchMiner import BasePlugin
 
 class JupyterLogger(BasePlugin):
     config = {
+        "debug": ["〰", "#b2c3db"],
         "info": ["💬", "#6f818a"],
         "success": ["✅", "#7cb305"],  # TODO:How to implement success method
         "error": ["❌", "#f3715c"],
@@ -53,7 +54,7 @@ class JupyterLogger(BasePlugin):
             )
 
     def debug(self, message):
-        raise NotImplementedError("JupyterLogger does Not Support 'debug' Logging.")
+        self._output(message, "debug")
 
     def info(self, message, **kwargs):  # TODO:Waiting for a better way to achieve Downward compatibility
         if "persist this model as best one" in message:

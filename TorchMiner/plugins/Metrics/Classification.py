@@ -1,4 +1,6 @@
 # -*- coding:utf-8 -*-
+import io
+
 import numpy as np
 import pandas as pd
 import seaborn as sn
@@ -8,7 +10,7 @@ from sklearn.metrics import classification_report, confusion_matrix, cohen_kappa
 from TorchMiner import BasePlugin
 
 
-class MultiClassesClassificationMetric(BasePlugin):
+class MultiClassesClassification(BasePlugin):
     """MultiClassesClassificationMetric
     This can be used directly if your loss function is torch.nn.CrossEntropy
     """
@@ -19,7 +21,6 @@ class MultiClassesClassificationMetric(BasePlugin):
             accuracy=True,
             confusion=True,
             kappa_score=True,
-            plot_confusion_matrix=True,
             report=True,
             backend="TensorboardDrawer",
             forward=None
@@ -45,8 +46,8 @@ class MultiClassesClassificationMetric(BasePlugin):
         self.predicts = []
         self.label = []
 
-    def after_val_iteration_ended(self, output, data, **ignore):
-        raw_output = output.detach().cpu().numpy()
+    def after_val_iteration_ended(self, predicts, data, **ignore):
+        raw_output = predicts.detach().cpu().numpy()
         if self.forward:
             predicts, label = self.forward(raw_output, data)
         else:
@@ -60,8 +61,8 @@ class MultiClassesClassificationMetric(BasePlugin):
         label = np.concatenate(self.label)
         if self.accuracy:
             accuracy = (predicts == label).sum() / len(predicts)
-            self.logger.info("Val Accuracy:", accuracy)
-            self.recorder.record("Val/Accuracy", accuracy)
+            self.logger.info(f"Val Accuracy:{accuracy}")
+            self.recorder.scalar("Val/Accuracy", accuracy)
 
         if self.confusion_matrix:
             matrix = confusion_matrix(label, predicts)
@@ -69,12 +70,21 @@ class MultiClassesClassificationMetric(BasePlugin):
             svm = sn.heatmap(df_cm, annot=True, cmap="OrRd", fmt=".3g")
             figure = svm.get_figure()
             if val_loss < self.miner.lowest_val_loss:
-                self.recorder.record("Val/ConfusionMatrix", figure)
+                # Solution to store Matplotlib Figure in TensorBoardX
+                # https://stackoverflow.com/questions/7821518/matplotlib-save-plot-to-numpy-array
+                with io.BytesIO() as buff:
+                    figure.savefig(buff, format='raw')
+                    buff.seek(0)
+                    data = np.frombuffer(buff.getvalue(), dtype=np.uint8)
+                w, h = figure.canvas.get_width_height()
+                im = data.reshape((int(h), int(w), -1))
+                im = im.transpose((2, 0, 1))  # Change to CHW
+                self.recorder.figure("Val/ConfusionMatrix", im)
             plt.close(figure)
 
         if self.kappa_score:
             kappa = cohen_kappa_score(label, predicts, weights="quadratic")
-            self.recorder("Val/KappaScore", kappa)
+            self.recorder.scalar("Val/KappaScore", kappa)
 
         if self.classification_report:
             # TODO:Design a better way to output or reord classification report

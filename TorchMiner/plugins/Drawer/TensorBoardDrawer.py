@@ -25,11 +25,15 @@ class TensorboardDrawer(BasePlugin):
         self.writer.add_scalar("Loss/val", val_loss, global_step=epoch)
 
     # --- Outer APIs ---
-    def record(self, label, value, epoch=None, **ignore):
+    def scalar(self, label, value, epoch=None, **ignore):
         if not epoch:
             epoch = self.miner.current_epoch
         self.writer.add_scalar(label, value, epoch)
 
+    def figure(self, label, value, epoch=None, **ignore):
+        if not epoch:
+            epoch = self.miner.current_epoch
+        self.writer.add_image(label, value, epoch)
 # def scalars(self, x, value, graph):
 #     """
 #     Add a scalar on a graph

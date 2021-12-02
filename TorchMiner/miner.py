@@ -225,7 +225,8 @@ class Miner(object):
 
             total_train_loss = 0
             self.logger.info(f"start to train epoch {self.current_epoch}")
-            for index, data in enumerate(self.tqdm(self.train_dataloader)):
+            t = self.tqdm(self.train_dataloader)
+            for index, data in enumerate(t):
                 self.plugins.call(
                     "before_train_iteration_start",
                     data=data,

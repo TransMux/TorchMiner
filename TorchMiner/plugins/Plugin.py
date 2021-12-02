@@ -108,15 +108,15 @@ class BasePlugin:
 class PluginManager:
     def __init__(self, miner, plugins: list):
         self.miner = miner
-        self.logger = miner.get_logger("PluginManager")
         if plugins:
             self.plugins = plugins
             self.plugin_names = [i.name for i in self.plugins]
         else:
             self.plugins = []
         self.maper = dict(zip(self.plugin_names, self.plugins))
+        self.prepare()  # Prepare is the earliest
+        self.logger = miner.get_logger("PluginManager")
         self.check_requirements()
-        self.prepare()
 
     def check_requirements(self):
         """
@@ -124,13 +124,15 @@ class PluginManager:
          - Requirements are set in restrict string
         :return:
         """
+        error = False
         for p in self.plugins:
-            self.logger.debug(f"Checking Requirements of {p}.")
+            self.logger.debug(f"Checking Requirements of {p.name}.")
             for r in p.requirements:
                 if r not in self.plugin_names:
-                    self.logger.error(f"Requirement {r} of {p} is not Find.")
-            else:
-                self.logger.info("Successfully Passed Plugin Requirements Check with no Errors.")
+                    self.logger.error(f"Requirement {r} of {p.name} is not Find.")
+                    error = True
+        if not error:
+            self.logger.info("Successfully Passed Plugin Requirements Check with no Errors.")
         # TODO: Try to import Unmet needs
 
     def status(self):
