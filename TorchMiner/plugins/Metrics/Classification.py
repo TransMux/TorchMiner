@@ -1,6 +1,4 @@
 # -*- coding:utf-8 -*-
-import io
-
 import numpy as np
 import pandas as pd
 import seaborn as sn
@@ -8,6 +6,7 @@ from matplotlib import pyplot as plt
 from sklearn.metrics import classification_report, confusion_matrix, cohen_kappa_score
 
 from TorchMiner import BasePlugin
+from TorchMiner.utils import figure2numpy
 
 
 class MultiClassesClassificationMetric(BasePlugin):
@@ -70,16 +69,7 @@ class MultiClassesClassificationMetric(BasePlugin):
             svm = sn.heatmap(df_cm, annot=True, cmap="OrRd", fmt=".3g")
             figure = svm.get_figure()
             if val_loss < self.miner.lowest_val_loss:
-                # Solution to store Matplotlib Figure in TensorBoardX
-                # https://stackoverflow.com/questions/7821518/matplotlib-save-plot-to-numpy-array
-                with io.BytesIO() as buff:
-                    figure.savefig(buff, format='raw')
-                    buff.seek(0)
-                    data = np.frombuffer(buff.getvalue(), dtype=np.uint8)
-                w, h = figure.canvas.get_width_height()
-                im = data.reshape((int(h), int(w), -1))
-                im = im.transpose((2, 0, 1))  # Change to CHW
-                self.recorder.figure("Val/ConfusionMatrix", im)
+                self.recorder.figure("Val/ConfusionMatrix", figure2numpy(figure))
             plt.close(figure)
 
         if self.kappa_score:

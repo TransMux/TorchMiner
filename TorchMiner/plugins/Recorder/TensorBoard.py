@@ -34,19 +34,3 @@ class TensorboardDrawer(BasePlugin):
         if not epoch:
             epoch = self.miner.current_epoch
         self.writer.add_image(label, value, epoch)
-# def scalars(self, x, value, graph):
-#     """
-#     Add a scalar on a graph
-#     :param x:
-#     :param value:
-#     :param graph:
-#     :return:
-#     """
-#     if graph not in self.state:
-#         self.state[graph] = 0
-#     key = "{}/{}".format(self.miner.experiment, graph)
-#     if isinstance(value, dict):
-#         self.writer.add_scalars(key, value, self.state[graph])
-#     else:
-#         self.writer.add_scalar(key, value, self.state[graph])
-#     self.state[graph] += 1
