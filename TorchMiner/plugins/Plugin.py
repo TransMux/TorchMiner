@@ -35,25 +35,16 @@ class BasePlugin:
     def before_train_epoch_start(self, *args, **kwargs):
         pass
 
-    def after_train_epoch_end(self, *args, **kwargs):
-        pass
-
-    def before_val_epoch_start(self, *args, **kwargs):
-        pass
-
-    def after_val_epoch_end(self, *args, **kwargs):
-        pass
-
-    def before_quit(self, *args, **kwargs):
-        pass
-
-    def after_epoch_end(self, *args, **kwargs):
-        pass
-
     def before_train_iteration_start(self, *args, **kwargs):
         pass
 
     def after_train_iteration_end(self, *args, **kwargs):
+        pass
+
+    def after_train_epoch_end(self, *args, **kwargs):
+        pass
+
+    def before_val_epoch_start(self, *args, **kwargs):
         pass
 
     def before_val_iteration_start(self, *args, **kwargs):
@@ -62,12 +53,17 @@ class BasePlugin:
     def after_val_iteration_ended(self, *args, **kwargs):
         pass
 
+    def after_val_epoch_end(self, *args, **kwargs):
+        pass
+
     def before_checkpoint_persisted(self, *args, **kwargs):
         pass
 
     def after_checkpoint_persisted(self, *args, **kwargs):
         pass
 
+    def before_quit(self, *args, **kwargs):
+        pass
     # Hook Functions end
 
     # def print_txt(self, printable, name):

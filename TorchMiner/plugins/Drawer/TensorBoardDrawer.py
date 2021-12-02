@@ -1,5 +1,4 @@
 # -*- coding:utf-8 -*-
-
 from tensorboardX import SummaryWriter
 
 from TorchMiner.plugins import BasePlugin
