@@ -29,7 +29,7 @@ class ColumnNotExistsError(Exception):
     pass
 
 
-class Sheet(BasePlugin):
+class BaseSheet(BasePlugin):
     def __init__(self):
         super().__init__()
         self.columns = []

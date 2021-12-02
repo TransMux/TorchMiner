@@ -2,13 +2,12 @@
 import math
 
 import httplib2
-
-from TorchMiner.plugins.Sheet import Sheet, _async
-
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
+
+from TorchMiner.plugins.Recorder.BasicSheet import _async, BaseSheet
 
 
 def num_to_letter(num):
@@ -21,7 +20,7 @@ def num_to_letter(num):
     return "".join(reversed(letters))
 
 
-class GoogleSheet(Sheet):
+class GoogleSheet(BaseSheet):
     def _create_experiment_row(self):
         pass
 

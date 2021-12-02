@@ -10,7 +10,7 @@ from sklearn.metrics import classification_report, confusion_matrix, cohen_kappa
 from TorchMiner import BasePlugin
 
 
-class MultiClassesClassification(BasePlugin):
+class MultiClassesClassificationMetric(BasePlugin):
     """MultiClassesClassificationMetric
     This can be used directly if your loss function is torch.nn.CrossEntropy
     """
