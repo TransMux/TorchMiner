@@ -188,6 +188,8 @@ class Miner(object):
             self.plugins.load(checkpoint)
 
             self.logger.info(f"Checkpoint {checkpoint_path} Successfully Loaded")
+        # else:
+
         self.model = self._parallel_model(self.model)
 
     def _parallel_model(self, model):
