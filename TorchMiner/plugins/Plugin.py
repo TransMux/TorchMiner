@@ -111,12 +111,12 @@ class PluginManager:
         if plugins:
             self.plugins = plugins
             self.plugin_names = [i.name for i in self.plugins]
+            self.maper = dict(zip(self.plugin_names, self.plugins))
+            self.prepare()  # Prepare is the earliest
+            self.logger = miner.get_logger("PluginManager")
+            self.check_requirements()
         else:
             self.plugins = []
-        self.maper = dict(zip(self.plugin_names, self.plugins))
-        self.prepare()  # Prepare is the earliest
-        self.logger = miner.get_logger("PluginManager")
-        self.check_requirements()
 
     def check_requirements(self):
         """
@@ -141,12 +141,6 @@ class PluginManager:
         :return:
         """
         self.logger.info(f"Registered Plugins:{self.plugins}")
-
-    def register(self):
-        """
-        Register Plugins from a given module list
-        :return:
-        """
 
     def call(self, hook, **payload):
         """

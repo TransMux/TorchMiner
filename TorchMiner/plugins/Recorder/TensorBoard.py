@@ -7,7 +7,7 @@ from TorchMiner.plugins import BasePlugin
 class TensorboardDrawer(BasePlugin):
     """To visualize everything in training process using tensorboard"""
 
-    def __init__(self, input_to_model):
+    def __init__(self, input_to_model=None):
         super(TensorboardDrawer, self).__init__()
         self.input_to_model = input_to_model
 
@@ -16,7 +16,10 @@ class TensorboardDrawer(BasePlugin):
         self.writer = SummaryWriter(log_dir=self.miner.experiment_dir)
 
     def after_init(self, **ignore):
-        self.writer.add_graph(self.miner.model, self.input_to_model)
+        try:
+            self.writer.add_graph(self.miner.model, self.input_to_model)
+        except Exception as e:
+            self.logger.error(f"{e} occurred when visializing model")
 
     def after_train_epoch_end(self, train_loss, epoch, **ignore):
         self.writer.add_scalar("Loss/train", train_loss, global_step=epoch)

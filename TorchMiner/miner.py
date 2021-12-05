@@ -38,7 +38,7 @@ class Miner(object):
         :param torch.nn.Module model: Target
         :param torch.optim.Optimizer optimizer:
         :param loss_func: A function to compute Loss
-            A Special Hook Function, the function receives 2 variable:
+            A Special Function, the function receives 2 variable:
             * Miner: The Miner Object
             * Data: The Batch data yield by the loader
             return Value should be a float number of the loss.
@@ -211,7 +211,7 @@ class Miner(object):
             self.current_epoch += 1
             self.plugins.call("before_train_epoch_start", epoch=self.current_epoch)
             self.model.train()  # Set Train Mode
-            train_iters = len(self.train_dataloader)
+            train_iters = len(self.train_dataloader)  # For future change during training
 
             total_train_loss = 0
             self.logger.info(f"start to train epoch {self.current_epoch}")
@@ -250,7 +250,6 @@ class Miner(object):
                 self.optimizer.zero_grad()
             else:
                 self.optimizer.zero_grad(set_to_none=True)
-            # self._update_progress(force=True, train_percentage=f"{current_percentage}%")
 
             total_train_loss = total_train_loss / train_iters
             self.logger.info(
@@ -435,6 +434,7 @@ class Miner(object):
 
     def _create_dirs(self):
         """Create directories"""
-        utils.create_dir(self.alchemistic_directory)
-        utils.create_dir(self.alchemistic_directory, self.experiment)
-        utils.create_dir(self.alchemistic_directory, self.experiment, "models")
+        if self.alchemistic_directory:
+            utils.create_dir(self.alchemistic_directory)
+            utils.create_dir(self.alchemistic_directory, self.experiment)
+            utils.create_dir(self.alchemistic_directory, self.experiment, "models")

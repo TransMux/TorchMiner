@@ -77,5 +77,5 @@ class MultiClassesClassificationMetric(BasePlugin):
             self.recorder.scalar("Val/KappaScore", kappa)
 
         if self.classification_report:
-            # TODO:Design a better way to output or reord classification report
-            self.logger.info(classification_report(label, predicts))
+            # TODO:Design a better way to output or record classification report
+            print(classification_report(label, predicts))
