@@ -92,6 +92,8 @@ class Miner(object):
         self.current_train_iteration = 0
         self.current_val_iteration = 0
         self.max_epochs = max_epochs
+        if forward:
+            self.logger.warning("Forward Function is Discarded in v0.4.2, Please inherit _forward function")
         self.forward_fn = forward
         self.amp = amp
         self.amp_scaler = amp_scaler
@@ -360,6 +362,14 @@ class Miner(object):
         loss = loss.detach().cpu().item()
         return predict, loss
 
+    def before_forward(self, data):
+        """
+        Inherit this function to pre-process the data from the input model
+        :param data:
+        :return:
+        """
+        return data
+
     def _forward(self, data):
         """
         A Function to calculate Network Forward results.
@@ -370,9 +380,18 @@ class Miner(object):
         if self.forward_fn:
             return self.forward_fn(self, data)
         else:
-            predict = self.model(data[0].to(self.devices))
+            predict = self.model(self.before_forward(data[0]).to(self.devices))
             loss = self.loss_func(predict, data[1].to(self.devices))
-            return predict, loss
+            return self.after_forward(predict, loss)
+
+    def after_forward(self, predict, loss):
+        """
+        Inherit this function to view or change the prediction.
+        :param predict:
+        :param loss:
+        :return:
+        """
+        return predict, loss
 
     def persist(self, name):
         """save the model to disk"""
