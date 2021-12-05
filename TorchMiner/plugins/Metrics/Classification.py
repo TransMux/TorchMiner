@@ -22,7 +22,8 @@ class MultiClassesClassificationMetric(BasePlugin):
             kappa_score=True,
             report=True,
             backend="TensorboardDrawer",
-            forward=None
+            forward=None,
+            labels=None
     ):
         super().__init__()
         self.accuracy = accuracy
@@ -31,6 +32,7 @@ class MultiClassesClassificationMetric(BasePlugin):
         self.classification_report = report
         self.backend = backend  # TODO:Can be used for sheet recorder
         self.forward = forward
+        self.labels = labels
 
     # def before_init(self):
     #     self.create_sheet_column("latest_confusion_matrix", "Latest Confusion Matrix")
@@ -56,15 +58,21 @@ class MultiClassesClassificationMetric(BasePlugin):
         self.label.append(label)
 
     def after_val_epoch_end(self, val_loss, **ignore):
-        predicts = np.concatenate(self.predicts)
-        label = np.concatenate(self.label)
+        try:
+            predicts = np.concatenate(self.predicts)
+            label = np.concatenate(self.label)
+        except Exception as e:  # Fix #13
+            self.logger.warning(f"{e} when concatenating val predictions, maybe only have one batch of val iteration.")
+            predicts = self.predicts[0]
+            label = self.label[0]
+
         if self.accuracy:
             accuracy = (predicts == label).sum() / len(predicts)
             self.logger.info(f"Val Accuracy:{accuracy}")
             self.recorder.scalar("Val/Accuracy", accuracy)
 
         if self.confusion_matrix:
-            matrix = confusion_matrix(label, predicts)
+            matrix = confusion_matrix(label, predicts, labels=self.labels)  # Now can pass string items
             df_cm = pd.DataFrame(matrix)
             svm = sn.heatmap(df_cm, annot=True, cmap="OrRd", fmt=".3g")
             figure = svm.get_figure()
