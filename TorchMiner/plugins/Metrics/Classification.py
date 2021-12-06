@@ -47,14 +47,21 @@ class MultiClassesClassificationMetric(BasePlugin):
         self.predicts = []
         self.label = []
 
+    def predicts_and_labels(self, predicts, data):
+        """
+        Inherit this function to use custom classification function.
+        :param predicts:
+        :param data:
+        :return:
+        """
+        predict = np.argmax(predicts, axis=1)  # Batch first
+        label = data[1].cpu().numpy()  # label
+        return predict, label
+
     def after_val_iteration_ended(self, predicts, data, **ignore):
         raw_output = predicts.detach().cpu().numpy()
-        if self.forward:
-            predicts, label = self.forward(raw_output, data)
-        else:
-            predicts = np.argmax(raw_output, axis=1)  # Batch first
-            label = data[1].cpu().numpy()  # label
-        self.predicts.append(predicts)
+        predict, label = self.predicts_and_labels(raw_output, data)
+        self.predicts.append(predict)  # fix #17
         self.label.append(label)
 
     def after_val_epoch_end(self, val_loss, **ignore):
@@ -67,7 +74,7 @@ class MultiClassesClassificationMetric(BasePlugin):
             label = self.label[0]
 
         if self.accuracy:
-            accuracy = (predicts == label).sum() / len(predicts)
+            accuracy = np.array(predicts == label).sum() / len(predicts)
             self.logger.info(f"Val Accuracy:{accuracy}")
             self.recorder.scalar("Val/Accuracy", accuracy)
 

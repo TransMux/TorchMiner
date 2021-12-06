@@ -367,12 +367,21 @@ class Miner(object):
     def before_forward(self, data):
         """
         Inherit this function to pre-process the data from the input model
-        :param data:
+        :param data: default data[2]
         :return:
         """
-        return data
+        return data[0]
+
+    def before_label_forward(self, data):
+        """
+        Inherit this function to select which data should be passed to calculate loss.
+        :param data: default data[1]
+        :return:
+        """
+        return data[1]
 
     def _forward(self, data):
+        # TODO：Maybe we should inherit the whole forward function?
         """
         A Function to calculate Network Forward results.
         The custom Forward_fn should return Network Output and Loss together.
@@ -382,13 +391,14 @@ class Miner(object):
         if self.forward_fn:
             return self.forward_fn(self, data)
         else:
-            predict = self.model(self.before_forward(data[0]).to(self.devices))
-            loss = self.loss_func(predict, data[1].to(self.devices))
+            predict = self.model(self.before_forward(data).to(self.devices))
+            loss = self.loss_func(predict, self.before_label_forward(data).to(self.devices))
             return self.after_forward(predict, loss)
 
     def after_forward(self, predict, loss):
         """
         Inherit this function to view or change the prediction.
+        Note that predict will only be used in "after_val_iteration_ended" hook.
         :param predict:
         :param loss:
         :return:
