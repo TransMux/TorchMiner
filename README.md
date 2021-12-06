@@ -1,9 +1,9 @@
 ![GitHub Repo stars](https://img.shields.io/github/stars/InEase/TorchMiner) ![PyPI](https://img.shields.io/pypi/v/torchminer)
 # Description
 
-TorchMiner is designed to automatic process the training ,evaluating and testing process for PyTorch DeepLearning,with a simple API.
+TorchMiner is designed to automatic process the training, evaluating and testing process for PyTorch DeepLearning, with a simple API.
 
-You can access all Functions of MineTorch simply use `Miner`.
+You can access all Functions of TorchMiner simply use `Miner`.
 
 ## Quick Start
 
