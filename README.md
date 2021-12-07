@@ -3,8 +3,13 @@
 
 TorchMiner is designed to automatic process the training, evaluating and testing process for PyTorch DeepLearning, with a simple API.
 
-You can access all Functions of TorchMiner simply use `Miner`.
+You can access all Functions of TorchMiner by simply use `Miner`.
 
+## Installation
+
+```
+pip install TorchMiner --upgrade
+```
 ## Quick Start
 
 ```python
@@ -15,14 +20,14 @@ from TorchMiner.plugins.Metrics import MultiClassesClassificationMetric
 from TorchMiner.plugins.Recorder import TensorboardDrawer
 
 miner = Miner(
-    alchemistic_directory='/the/route/to/log', 
+    alchemistic_directory='/the/path/to/log', 
     train_dataloader=train_dataloader, 
     val_dataloader=val_dataloader,  
 
     model=model, 
     loss_func=MSELoss,  
     optimizer=optimizer,  
-    experiment="the-name-of-experiment",  # Subdistribution in the experimental directory
+    experiment="the-name-of-experiment",  # Sub path in the experimental directory
     resume=True,  # Whether to automatically load the previous model
     eval_epoch=1,  # How many rounds are evaluated
     persist_epoch=2,  # How many rounds are saved once a checkpoint
@@ -30,7 +35,7 @@ miner = Miner(
     in_notebook=True,
     amp=True,  # Whether to use amp
     plugins=[
-        # Use the plugins to extend the function of miner
+        # Use the plugins to extend the function of miner, Plugins below are Officially supported
         JupyterLogger(),
         JupyterTqdm(),
         # The two above plugins are designed to get better output in Jupyter Enviroment
