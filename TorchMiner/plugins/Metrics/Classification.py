@@ -2,10 +2,11 @@
 import numpy as np
 import pandas as pd
 import seaborn as sn
-from TorchMiner import BasePlugin
-from TorchMiner.utils import figure2numpy
 from matplotlib import pyplot as plt
 from sklearn.metrics import classification_report, confusion_matrix, cohen_kappa_score
+
+from TorchMiner import BasePlugin
+from TorchMiner.utils import figure2numpy
 
 
 class MultiClassesClassificationMetric(BasePlugin):

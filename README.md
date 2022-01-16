@@ -1,5 +1,3 @@
-This Project is Forked From [MineTorch](https://github.com/louis-she/minetorch).
-
 Published on [pypi](https://pypi.org/project/torchminer/)
 
 Packaged Using [Poetry](https://python-poetry.org/)
@@ -9,6 +7,9 @@ TorchMiner is designed to automatic process the training ,evaluating and testing
 
 You can access all Functions of MineTorch simply use `Miner`.
 
-Renamed From TorchMiner[v0.4.4]
+Renamed From TorchMiner[v0.4.4] -> ExpMiner[v1.0.0]
+
+
+
 ## TODOList
 

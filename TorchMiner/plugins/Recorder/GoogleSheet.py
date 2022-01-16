@@ -2,11 +2,12 @@
 import math
 
 import httplib2
-from TorchMiner.plugins.Recorder.BasicSheet import _async, BaseSheet
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
+
+from TorchMiner.plugins.Recorder.BasicSheet import _async, BaseSheet
 
 
 def num_to_letter(num):

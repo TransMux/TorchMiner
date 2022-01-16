@@ -61,7 +61,7 @@ class NoiseSampleDetector(Plugin, Statable):
         for index, data in enumerate(dataloader):
             predict = self.model(data[0].to(self.devices))
             offset = index * dataloader.batch_size
-            results[offset : offset + dataloader.batch_size] = (
+            results[offset: offset + dataloader.batch_size] = (
                 self.metric(predict, data[1].to(self.devices)).detach().cpu()
             )
         return results
