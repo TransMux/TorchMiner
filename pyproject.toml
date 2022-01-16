@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "TorchMiner"
+name = "ExptMiner"
 version = "0.4.4"
-description = "Run Torch With A Simple Miner"
+description = "Run and Discover your Experiments In A Paradigm."
 authors = ["InEase <inease28@gmail.com>"]
 readme = "README.md"
 

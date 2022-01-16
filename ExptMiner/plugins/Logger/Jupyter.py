@@ -3,7 +3,6 @@ import time
 
 import tqdm
 from IPython.core.display import HTML, display
-
 from TorchMiner import BasePlugin
 
 

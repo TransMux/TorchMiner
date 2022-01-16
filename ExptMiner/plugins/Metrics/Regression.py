@@ -1,8 +1,7 @@
 # -*- coding:utf-8 -*-
 import numpy as np
-from sklearn.metrics import mean_absolute_percentage_error
-
 from TorchMiner import BasePlugin
+from sklearn.metrics import mean_absolute_percentage_error
 
 
 class RegressionAccuracy(BasePlugin):
