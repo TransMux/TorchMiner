@@ -2,3 +2,4 @@
 /dist/
 /poetry.lock
 /TorchMiner/demo.py
+/test.py
