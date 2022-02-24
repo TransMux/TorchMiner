@@ -67,7 +67,6 @@ class Miner(object):
         """
         self.alchemy_directory: Path = Path(alchemy_directory)  # working dir
         self.model = model
-        self.optimizer = optimizer
         self.train_dataloader = train_dataloader
         self.experiment: str = experiment
         self.logger_prototype = ColoredLogger
@@ -80,7 +79,8 @@ class Miner(object):
         self.experiment_dir = alchemy_directory / self.experiment
         self.models_dir = alchemy_directory / self.experiment / "models"
         self.accumulated_iter = float(accumulated_iter)
-        self.loss_func = loss_func
+        self.optimizer = optimizer
+        self.loss_func = loss_func.to(self.devices)
         self.resume = resume
         self.eval_epoch = eval_epoch
         self.persist_stride = persist_epoch
