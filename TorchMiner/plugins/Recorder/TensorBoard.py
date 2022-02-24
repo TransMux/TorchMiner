@@ -19,7 +19,7 @@ class TensorboardDrawer(BasePlugin):
         try:
             self.writer.add_graph(self.miner.model, self.input_to_model)
         except Exception as e:
-            self.logger.error(f"'{e}' occurred when visializing model")
+            self.logger.error(f"{e} occurred when visializing model")
 
     def after_train_epoch_end(self, train_loss, epoch, **ignore):
         self.writer.add_scalar("Loss/train", train_loss, global_step=epoch)
