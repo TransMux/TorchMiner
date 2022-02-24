@@ -28,7 +28,6 @@ class Miner(object):
             plugins=None,
             accumulated_iter=1,
             ignore_optimizer_resume=False,
-            forward=None,
             amp=False,
             amp_scaler=True,
     ):
@@ -63,7 +62,6 @@ class Miner(object):
         :param in_notebook:
         :param accumulated_iter:
         :param ignore_optimizer_resume:
-        :param forward:
         :param amp:
         :param amp_scaler:
         """
@@ -71,7 +69,7 @@ class Miner(object):
         self.model = model
         self.optimizer = optimizer
         self.train_dataloader = train_dataloader
-        self.experiment = experiment
+        self.experiment: str = experiment
         self.logger_prototype = ColoredLogger
         self.val_dataloader = val_dataloader
         self.gpu = gpu
@@ -79,8 +77,8 @@ class Miner(object):
         self.ignore_optimizer_resume = ignore_optimizer_resume
         self._create_dirs()
         self.devices = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.experiment_dir = os.path.join(alchemy_directory, self.experiment)
-        self.models_dir = os.path.join(alchemy_directory, self.experiment, "models")
+        self.experiment_dir = alchemy_directory / self.experiment
+        self.models_dir = alchemy_directory / self.experiment / "models"
         self.accumulated_iter = float(accumulated_iter)
         self.loss_func = loss_func
         self.resume = resume
@@ -92,9 +90,6 @@ class Miner(object):
         self.current_train_iteration = 0
         self.current_val_iteration = 0
         self.max_epochs = max_epochs
-        if forward:
-            self.logger.warning("Forward Function is Discarded in v0.4.2, Please inherit _forward function")
-        self.forward_fn = forward
         self.amp = amp
         self.amp_scaler = amp_scaler
         if self.amp and self.amp_scaler:
@@ -347,11 +342,11 @@ class Miner(object):
         self.current_train_iteration += 1
         if self.amp and self.amp_scaler:
             with torch.cuda.amp.autocast():
-                _, loss = self._forward(data)
+                _, loss = self.forward(data)
                 separate_loss = loss / self.accumulated_iter
             separate_loss = self.scaler.scale(separate_loss)
         else:
-            _, loss = self._forward(data)
+            _, loss = self.forward(data)
             separate_loss = loss / self.accumulated_iter  # TODO:实现accumulated_iter
         separate_loss.backward()
         loss = loss.detach().cpu().item()
@@ -360,49 +355,20 @@ class Miner(object):
     def _run_val_iteration(self, data):
         self.status = "val"
         self.current_val_iteration += 1
-        predict, loss = self._forward(data)
+        predict, loss = self.forward(data)
         loss = loss.detach().cpu().item()
         return predict, loss
 
-    def before_forward(self, data):
-        """
-        Inherit this function to pre-process the data from the input model
-        :param data: default data[2]
-        :return:
-        """
-        return data[0]
-
-    def before_label_forward(self, data):
-        """
-        Inherit this function to select which data should be passed to calculate loss.
-        :param data: default data[1]
-        :return:
-        """
-        return data[1]
-
-    def _forward(self, data):
-        # TODO：Maybe we should inherit the whole forward function?
+    def forward(self, data):
         """
         A Function to calculate Network Forward results.
         The custom Forward_fn should return Network Output and Loss together.
+        If Error Occurs in this Phase, Please use custom forward function
         :param data:
         :return:
         """
-        if self.forward_fn:
-            return self.forward_fn(self, data)
-        else:
-            predict = self.model(self.before_forward(data).to(self.devices))
-            loss = self.loss_func(predict, self.before_label_forward(data).to(self.devices))
-            return self.after_forward(predict, loss)
-
-    def after_forward(self, predict, loss):
-        """
-        Inherit this function to view or change the prediction.
-        Note that predict will only be used in "after_val_iteration_ended" hook.
-        :param predict:
-        :param loss:
-        :return:
-        """
+        predict = self.model(data.to(self.devices))
+        loss = self.loss_func(predict, data.to(self.devices))
         return predict, loss
 
     def persist(self, name):
@@ -435,7 +401,7 @@ class Miner(object):
         self.plugins.call("after_checkpoint_persisted", modelpath=modelpath, checkpoint_name=name)
 
     def _standard_model_path(self, model_name):
-        return os.path.join(self.models_dir, f"{model_name}.pth.tar")
+        return self.models_dir / f"{model_name}.pth.tar"
 
     def _search_model_file(self, model_name):
         model_name_path = Path(str(model_name))
