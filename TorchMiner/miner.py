@@ -12,7 +12,7 @@ from . import utils
 class Miner(object):
     def __init__(
             self,
-            alchemistic_directory,
+            alchemy_directory,
             model,
             optimizer,
             loss_func,
@@ -34,7 +34,7 @@ class Miner(object):
     ):
         """
         Core Of TorchMiner
-        :param alchemistic_directory: The directory which TorchMiner will use to Store Everything in
+        :param alchemy_directory: The directory which TorchMiner will use to Store Everything in
         :param torch.nn.Module model: Target
         :param torch.optim.Optimizer optimizer:
         :param loss_func: A function to compute Loss
@@ -67,7 +67,7 @@ class Miner(object):
         :param amp:
         :param amp_scaler:
         """
-        self.alchemistic_directory = alchemistic_directory  # working dir
+        self.alchemy_directory: Path = Path(alchemy_directory)  # working dir
         self.model = model
         self.optimizer = optimizer
         self.train_dataloader = train_dataloader
@@ -79,8 +79,8 @@ class Miner(object):
         self.ignore_optimizer_resume = ignore_optimizer_resume
         self._create_dirs()
         self.devices = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.experiment_dir = os.path.join(alchemistic_directory, self.experiment)
-        self.models_dir = os.path.join(alchemistic_directory, self.experiment, "models")
+        self.experiment_dir = os.path.join(alchemy_directory, self.experiment)
+        self.models_dir = os.path.join(alchemy_directory, self.experiment, "models")
         self.accumulated_iter = float(accumulated_iter)
         self.loss_func = loss_func
         self.resume = resume
@@ -465,7 +465,7 @@ class Miner(object):
 
     def _create_dirs(self):
         """Create directories"""
-        if self.alchemistic_directory:
-            utils.create_dir(self.alchemistic_directory)
-            utils.create_dir(self.alchemistic_directory, self.experiment)
-            utils.create_dir(self.alchemistic_directory, self.experiment, "models")
+        if self.alchemy_directory:
+            utils.create_dir(self.alchemy_directory)
+            utils.create_dir(self.alchemy_directory, self.experiment)
+            utils.create_dir(self.alchemy_directory, self.experiment, "models")
