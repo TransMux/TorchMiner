@@ -35,7 +35,7 @@ class Miner(object):
         Core Of TorchMiner
         :param alchemy_directory: The directory which TorchMiner will use to Store Everything in
         :param torch.nn.Module model: Target
-        :param torch.optim.Optimizer optimizer:
+        :param torch.optim.Optimizer optimizer: One should promise that Optimizer is inited on same device
         :param loss_func: A function to compute Loss
             A Special Function, the function receives 2 variable:
             * Miner: The Miner Object
