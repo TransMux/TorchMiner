@@ -7,6 +7,26 @@ from IPython.core.display import HTML, display
 from TorchMiner import BasePlugin
 
 
+def _in_notebook():
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == 'ZMQInteractiveShell':
+            return True  # Jupyter notebook or qtconsole
+        elif shell == 'TerminalInteractiveShell':
+            return False  # Terminal running IPython
+        else:
+            return False  # Other type (?)
+    except NameError:
+        return False  # Probably standard Python interpreter
+
+
+def JupyterEnvironmentAutoEnable():
+    if _in_notebook():
+        return [JupyterLogger, JupyterTqdm]
+    else:
+        return []
+
+
 class JupyterLogger(BasePlugin):
     config = {
         "debug": ["〰", "#b2c3db"],

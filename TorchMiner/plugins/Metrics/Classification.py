@@ -83,8 +83,8 @@ class MultiClassesClassificationMetric(BasePlugin):
             df_cm = pd.DataFrame(matrix)
             svm = sn.heatmap(df_cm, annot=True, cmap="OrRd", fmt=".3g")
             figure = svm.get_figure()
-            if val_loss < self.miner.lowest_val_loss:
-                self.recorder.figure("Val/ConfusionMatrix", figure2numpy(figure))
+            # if val_loss < self.miner.lowest_val_loss:
+            self.recorder.figure("Val/ConfusionMatrix", figure2numpy(figure))
             plt.close(figure)
 
         if self.kappa_score:
