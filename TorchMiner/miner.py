@@ -106,6 +106,8 @@ class Miner(object):
         self._init_model()
         # --- After Init ---
         self.plugins.call("after_init")
+        if self.train_only:
+            self.logger.info("Running in Train Only Mode")
 
     @staticmethod
     def get_logger(name):
@@ -312,7 +314,7 @@ class Miner(object):
 
                 self.plugins.call(
                     "after_val_epoch_end",
-                    val_loss=total_train_loss,
+                    val_loss=total_val_loss,
                     epoch=self.current_epoch,
                 )
             self.persist("latest")
