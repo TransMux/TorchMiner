@@ -13,10 +13,10 @@ class Miner(object):
     def __init__(
             self,
             alchemy_directory,
+            experiment,
             model,
             optimizer,
             loss_func,
-            experiment,
             train_dataloader=None,
             val_dataloader=None,
             resume=True,
@@ -96,6 +96,7 @@ class Miner(object):
             self.scaler = torch.cuda.amp.GradScaler()
         self.tqdm = tqdm.tqdm
 
+        self.train_only = False if val_dataloader else True
         # --- Init Plugin ---
         self.plugins = PluginManager(self, plugins)
         self.logger = self.get_logger("Miner")
@@ -367,8 +368,8 @@ class Miner(object):
         :param data:
         :return:
         """
-        predict = self.model(data.to(self.devices))
-        loss = self.loss_func(predict, data.to(self.devices))
+        predict = self.model(data[0].to(self.devices))
+        loss = self.loss_func(predict, data[1].to(self.devices))
         return predict, loss
 
     def persist(self, name):
