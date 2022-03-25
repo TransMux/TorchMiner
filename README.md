@@ -17,7 +17,7 @@ from TorchMiner.plugins.Metrics import MultiClassesClassificationMetric
 from TorchMiner.plugins.Recorder import TensorboardDrawer
 
 miner = Miner(
-    alchemistic_directory='/the/route/to/log', 
+    alchemy_directory='/the/route/to/log', 
     train_dataloader=train_dataloader, 
     val_dataloader=val_dataloader,  
 

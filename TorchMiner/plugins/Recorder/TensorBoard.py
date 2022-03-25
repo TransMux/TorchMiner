@@ -17,7 +17,7 @@ class TensorboardDrawer(BasePlugin):
         self.writer = SummaryWriter(log_dir=self.miner.experiment_dir)
 
     def after_init(self, **ignore):
-        if self.input_to_model:
+        if self.input_to_model is not None:
             try:
                 self.writer.add_graph(self.miner.model, self.input_to_model)
             except Exception as e:
