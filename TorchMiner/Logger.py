@@ -56,7 +56,6 @@ class ColoredLogger(logging.Logger):
         console = logging.StreamHandler()
         console.setFormatter(color_formatter)
         self.addHandler(console)
-        return
 
 
 def getLogger(name):
