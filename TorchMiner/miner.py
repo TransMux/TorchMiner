@@ -119,7 +119,25 @@ class Miner(object):
                 "Don't parallel the model yourself, instead, if the "
                 "`gpu` option is true(default), TorchMiner will do this for you."
             )
+        self._resume()
 
+        self.model = self._parallel_model(self.model)
+
+    def _parallel_model(self, model):
+        # TODO:统一 miner.gpu 和 miner.device 的设置
+        # TODO:探索模型平行的原理，如何完成，数据集需要吗
+        if self.gpu:
+            gpu_count = torch.cuda.device_count()
+            if gpu_count == 0:
+                self.logger.warning("no GPU detected, will train on CPU.")
+            else:
+                self.logger.info(f"found {gpu_count} GPUs, will use all of them to train")
+                devices = list(range(gpu_count))
+                model.cuda()
+                model = torch.nn.DataParallel(model, devices)
+        return model
+
+    def _resume(self):
         # TODO:简化Resume from pretrained的流程 添加对自定义路径的支持
         if self.resume is True:  # Find by TorchMiner
             # resume from the newest model
@@ -143,19 +161,14 @@ class Miner(object):
             # TODO:After Loading Checkpoint, output basic information
             self.logger.info(f"Start to load checkpoint {checkpoint_path}")
             checkpoint = torch.load(checkpoint_path)
-            # Read Train Process From Resumed Data
-            self.current_epoch = checkpoint.get("epoch", 0)
-            self.current_train_iteration = checkpoint.get("train_iteration", 0)
-            self.current_val_iteration = checkpoint.get("val_iteration", 0)
-            self.lowest_train_loss = checkpoint.get("lowest_train_loss", 9999)
-            self.lowest_val_loss = checkpoint.get("lowest_val_loss", 9999)
 
             # load model state
             try:
                 self.model.load_state_dict(checkpoint["state_dict"], strict=True)
             except Exception as e:
-                self.logger.warning(
-                    f"load checkpoint failed with {e}, the state in the "
+                self.logger.warning(e)
+                self.logger.critical(
+                    f"load checkpoint failed, the state in the "
                     "checkpoint is not matched with the model, "
                     "try to reload checkpoint with unstrict mode"
                 )
@@ -167,10 +180,17 @@ class Miner(object):
                 try:
                     self.optimizer.load_state_dict(checkpoint["optimizer"])
                 except Exception as e:
-                    self.logger.warning(
-                        f"load optimizer state failed with {e}, will skip this error and continue, "
+                    self.logger.warning(e)
+                    self.logger.critical(
+                        f"load optimizer state failed, will skip this error and continue, "
                         "stop the process if it is not expected"
                     )
+            # Read Train Process From Resumed Data
+            self.current_epoch = checkpoint.get("epoch", 0)
+            self.current_train_iteration = checkpoint.get("train_iteration", 0)
+            self.current_val_iteration = checkpoint.get("val_iteration", 0)
+            self.lowest_train_loss = checkpoint.get("lowest_train_loss", 9999)
+            self.lowest_val_loss = checkpoint.get("lowest_val_loss", 9999)
 
             # load scaler state
             if self.amp and self.amp_scaler:
@@ -186,22 +206,6 @@ class Miner(object):
 
             self.logger.info(f"Checkpoint {checkpoint_path} Successfully Loaded")
         # else:
-
-        self.model = self._parallel_model(self.model)
-
-    def _parallel_model(self, model):
-        # TODO:统一 miner.gpu 和 miner.device 的设置
-        # TODO:探索模型平行的原理，如何完成，数据集需要吗
-        if self.gpu:
-            gpu_count = torch.cuda.device_count()
-            if gpu_count == 0:
-                self.logger.warning("no GPU detected, will train on CPU.")
-            else:
-                self.logger.info(f"found {gpu_count} GPUs, will use all of them to train")
-                devices = list(range(gpu_count))
-                model.cuda()
-                model = torch.nn.DataParallel(model, devices)
-        return model
 
     def train(self):
         """
