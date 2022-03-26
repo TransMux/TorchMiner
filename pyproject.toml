@@ -22,12 +22,6 @@ Pillow = "^8.4.0"
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
 
-[tool.poetry]
-packages = [
-    { include = "TorchMiner" },
-    { include = "TorchMiner/**/*.py" },
-]
-
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
