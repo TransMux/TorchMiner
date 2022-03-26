@@ -6,6 +6,7 @@ import tqdm
 from TorchMiner.Logger import ColoredLogger
 from TorchMiner.plugins import PluginManager
 from . import utils
+from .utils import find_resume_target
 
 
 class Miner(object):
@@ -119,73 +120,13 @@ class Miner(object):
                 "Don't parallel the model yourself, instead, if the "
                 "`gpu` option is true(default), TorchMiner will do this for you."
             )
-
-        # TODO:简化Resume from pretrained的流程 添加对自定义路径的支持
-        if self.resume is True:  # Find by TorchMiner
-            # resume from the newest model
-            if self._search_model_file("latest"):
-                checkpoint_path = self._search_model_file("latest")
+        if self.resume:
+            check_point = find_resume_target(self.models_dir, self.resume)
+            if check_point:
+                self.logger.info(f"Start to load checkpoint {check_point}")
+                self._resume(check_point)
             else:
-                checkpoint_path = None
                 self.logger.warning("Could not find checkpoint to resume, " "train from scratch")
-        elif isinstance(self.resume, str):  # specify model file name
-            checkpoint_path = self._search_model_file(self.resume)
-        elif isinstance(self.resume, int):  # specify train epoch
-            checkpoint_path = self._search_model_file(self.resume)
-        else:
-            checkpoint_path = None
-
-        if self.resume is not True and self.resume and checkpoint_path is None:
-            # user has specified a none existed model, should raise a error
-            raise Exception(f"Could not find model {self.resume}")
-
-        if checkpoint_path is not None:
-            # TODO:After Loading Checkpoint, output basic information
-            self.logger.info(f"Start to load checkpoint {checkpoint_path}")
-            checkpoint = torch.load(checkpoint_path)
-            # Read Train Process From Resumed Data
-            self.current_epoch = checkpoint.get("epoch", 0)
-            self.current_train_iteration = checkpoint.get("train_iteration", 0)
-            self.current_val_iteration = checkpoint.get("val_iteration", 0)
-            self.lowest_train_loss = checkpoint.get("lowest_train_loss", 9999)
-            self.lowest_val_loss = checkpoint.get("lowest_val_loss", 9999)
-
-            # load model state
-            try:
-                self.model.load_state_dict(checkpoint["state_dict"], strict=True)
-            except Exception as e:
-                self.logger.warning(
-                    f"load checkpoint failed with {e}, the state in the "
-                    "checkpoint is not matched with the model, "
-                    "try to reload checkpoint with unstrict mode"
-                )
-                # UnStrict Mode
-                self.model.load_state_dict(checkpoint["state_dict"], strict=False)
-
-            # load optimizer state
-            if "optimizer" in checkpoint and not self.ignore_optimizer_resume:
-                try:
-                    self.optimizer.load_state_dict(checkpoint["optimizer"])
-                except Exception as e:
-                    self.logger.warning(
-                        f"load optimizer state failed with {e}, will skip this error and continue, "
-                        "stop the process if it is not expected"
-                    )
-
-            # load scaler state
-            if self.amp and self.amp_scaler:
-                try:
-                    self.scaler.load_state_dict(checkpoint["scaler"])
-                except Exception as e:
-                    self.logger.warning(
-                        f"load scaler state failed with {e}, will skip this error and continue, "
-                        "stop the process if it is not expected"
-                    )
-
-            self.plugins.load(checkpoint)
-
-            self.logger.info(f"Checkpoint {checkpoint_path} Successfully Loaded")
-        # else:
 
         self.model = self._parallel_model(self.model)
 
@@ -202,6 +143,56 @@ class Miner(object):
                 model.cuda()
                 model = torch.nn.DataParallel(model, devices)
         return model
+
+    def _resume(self, checkpoint_path):
+        # TODO:After Loading Checkpoint, output basic information
+        checkpoint = torch.load(checkpoint_path)
+
+        # load model state
+        try:
+            self.model.load_state_dict(checkpoint["state_dict"], strict=True)
+        except Exception as e:
+            self.logger.warning(e)
+            self.logger.critical(
+                f"load checkpoint failed, the state in the "
+                "checkpoint is not matched with the model, "
+                "try to reload checkpoint with unstrict mode"
+            )
+            # UnStrict Mode
+            self.model.load_state_dict(checkpoint["state_dict"], strict=False)
+
+        # load optimizer state
+        if "optimizer" in checkpoint and not self.ignore_optimizer_resume:
+            try:
+                self.optimizer.load_state_dict(checkpoint["optimizer"])
+            except Exception as e:
+                self.logger.warning(e)
+                self.logger.critical(
+                    f"load optimizer state failed, will skip this error and continue, "
+                    "stop the process if it is not expected"
+                )
+        # Read Train Process From Resumed Data
+        self.current_epoch = checkpoint.get("epoch", 0)
+        self.current_train_iteration = checkpoint.get("train_iteration", 0)
+        self.current_val_iteration = checkpoint.get("val_iteration", 0)
+        self.lowest_train_loss = checkpoint.get("lowest_train_loss", 9999)
+        self.lowest_val_loss = checkpoint.get("lowest_val_loss", 9999)
+
+        # load scaler state
+        if self.amp and self.amp_scaler:
+            try:
+                self.scaler.load_state_dict(checkpoint["scaler"])
+            except Exception as e:
+                self.logger.warning(
+                    f"load scaler state failed with {e}, will skip this error and continue, "
+                    "stop the process if it is not expected"
+                )
+
+        self.plugins.load(checkpoint)
+
+        self.logger.info(f"Checkpoint {checkpoint_path} Successfully Loaded")
+
+    # else:
 
     def train(self):
         """
@@ -404,23 +395,6 @@ class Miner(object):
 
     def _standard_model_path(self, model_name):
         return self.models_dir / f"{model_name}.pth.tar"
-
-    def _search_model_file(self, model_name):
-        model_name_path = Path(str(model_name))
-        models_dir_path = Path(self.models_dir)
-
-        search_paths = [
-            model_name_path,
-            models_dir_path / model_name_path,
-            models_dir_path / f"{model_name}.pth.tar",
-            models_dir_path / f"epoch_{model_name}.pth.tar",
-        ]
-
-        for path in search_paths:
-            if path.is_file():
-                return path.resolve()
-
-        return None
 
     # # TODO: implement methods below
     # def graceful_stop(self):
