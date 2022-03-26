@@ -2,6 +2,7 @@ from pathlib import Path
 
 import torch
 import tqdm
+from torch.optim import Optimizer
 
 from TorchMiner.Logger import ColoredLogger
 from TorchMiner.plugins import PluginManager
@@ -35,7 +36,8 @@ class Miner(object):
         Core Of TorchMiner
         :param alchemy_directory: The directory which TorchMiner will use to Store Everything in
         :param torch.nn.Module model: Target
-        :param torch.optim.Optimizer optimizer: One should promise that Optimizer is inited on same device
+        :param torch.optim.Optimizer: One should promise that Optimizer is inited on same device or
+         a function that accepts model and returns an Optimizer, and TorchMiner will create the optimizer from it
         :param loss_func: A function to compute Loss
             A Special Function, the function receives 2 variable:
             * Miner: The Miner Object
@@ -66,20 +68,24 @@ class Miner(object):
         :param amp_scaler:
         """
         self.alchemy_directory: Path = Path(alchemy_directory)  # working dir
-        self.model = model
-        self.train_dataloader = train_dataloader
         self.experiment: str = experiment
-        self.logger_prototype = ColoredLogger
-        self.val_dataloader = val_dataloader
-        self.gpu = gpu
-        self.in_notebook = in_notebook
-        self.ignore_optimizer_resume = ignore_optimizer_resume
         self._create_dirs()
         self.devices = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.experiment_dir = alchemy_directory / self.experiment
         self.models_dir = alchemy_directory / self.experiment / "models"
         self.accumulated_iter = float(accumulated_iter)
-        self.optimizer = optimizer
+        self.model = model.to(self.devices)
+        self.train_dataloader = train_dataloader
+        self.logger_prototype = ColoredLogger
+        self.val_dataloader = val_dataloader
+        self.gpu = gpu
+        self.in_notebook = in_notebook
+        self.ignore_optimizer_resume = ignore_optimizer_resume
+
+        if isinstance(optimizer, Optimizer):
+            self.optimizer = optimizer
+        else:
+            self.optimizer = optimizer(self.model)
         self.loss_func = loss_func.to(self.devices)
         self.resume = resume
         self.eval_epoch = eval_epoch
