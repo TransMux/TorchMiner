@@ -3,3 +3,4 @@
 /poetry.lock
 /TorchMiner/demo.py
 /test.py
+__pycache__/
