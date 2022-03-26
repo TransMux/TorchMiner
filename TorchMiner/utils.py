@@ -1,4 +1,5 @@
 import io
+from pathlib import Path
 
 import numpy as np
 
@@ -45,3 +46,42 @@ def figure2numpy(fig):
     im = data.reshape((int(h), int(w), -1))
     im = im.transpose((2, 0, 1))  # Change to CHW
     return im
+
+
+def find_resume_target(path: Path, index):
+    """
+
+    :param path: /
+        Miner experiment path
+    :param index: /
+        True: Accept resume auto find result (Promise,default) Only best or latest
+        string/Path: Will use the given checkpoint.
+        int: Choose this epoch in auto find path.
+    :return:
+    """
+    if index is True:
+        search_paths = [
+            path / "best.pth.tar",
+            path / "latest.pth.tar",
+        ]
+    else:
+        index = str(index)
+        if Path(index).is_file():
+            return Path(index)
+
+        if (path / Path(index)).is_file():
+            return path / Path(index)
+        # The checkpoint is not given
+
+        search_paths = [
+            path,
+            path / index,
+            path / f"epoch_{index}.pth.tar",
+            path / f"{index}.pth.tar",
+            *path.glob("*.pth.tar"),
+        ]
+
+    for path in search_paths:
+        if path.is_file():
+            return path
+    return None
