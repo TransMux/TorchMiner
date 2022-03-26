@@ -55,7 +55,7 @@ trainer = Miner(
     alchemy_directory=Path('F:/miner'),
     experiment="TorchMiner",
     model=model,
-    optimizer=optim.SGD(model.parameters(), lr=0.01),
+    optimizer=lambda x: optim.SGD(x.parameters(), lr=0.01),
     train_dataloader=train_loader,
     val_dataloader=val_loader,
     loss_func=torch.nn.CrossEntropyLoss(),

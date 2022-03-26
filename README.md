@@ -3,7 +3,9 @@ Published on [pypi](https://pypi.org/project/torchminer/)
 Packaged Using [Poetry](https://python-poetry.org/)
 
 # Description
-TorchMiner is designed to automatic process the training ,evaluating and testing process for PyTorch DeepLearning,with a simple API.
+
+TorchMiner is designed to automatic process the training ,evaluating and testing process for PyTorch DeepLearning,with a
+simple API.
 
 You can access all Functions of MineTorch simply use `Miner`.
 
@@ -24,6 +26,8 @@ miner = Miner(
     model=model, 
     loss_func=MSELoss,  
     optimizer=optimizer,  
+    # or, by passing a function to optimizer, TorchMiner can auto cuda the params of optimizer
+    # optimizer=lambda x: optim.SGD(x.parameters(), lr=0.01)，
     experiment="the-name-of-experiment",  # Subdistribution in the experimental directory
     resume=True,  # Whether to automatically load the previous model
     eval_epoch=1,  # How many rounds are evaluated
@@ -35,6 +39,8 @@ miner = Miner(
         # Use the plugins to extend the function of miner
         JupyterLogger(),
         JupyterTqdm(),
+        # or, you can use the below one to auto enable the above two
+        # *JupyterEnvironmentAutoEnable(),
         # The two above plugins are designed to get better output in Jupyter Enviroment
         MultiClassesClassificationMetric(),
         # This Plugin can automaticly calculate Accuracy, kappa score and Confusion Matrix in Classification problems.
