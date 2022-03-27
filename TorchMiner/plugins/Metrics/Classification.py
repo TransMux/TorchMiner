@@ -47,7 +47,8 @@ class MultiClassesClassificationMetric(BasePlugin):
         self.predicts = []
         self.label = []
 
-    def predicts_and_labels(self, predicts, data):
+    @staticmethod
+    def predicts_and_labels(predicts, data):
         """
         Inherit this function to use custom classification function.
         :param predicts:
