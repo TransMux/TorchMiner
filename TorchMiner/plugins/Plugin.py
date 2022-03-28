@@ -1,3 +1,6 @@
+from typing import List
+
+
 class BasePlugin:
     requirements = []
 
@@ -69,7 +72,7 @@ class BasePlugin:
 
 
 class PluginManager:
-    def __init__(self, miner, plugins: list):
+    def __init__(self, miner, plugins: List[BasePlugin]):
         self.miner = miner
         if plugins:
             self.plugins = plugins

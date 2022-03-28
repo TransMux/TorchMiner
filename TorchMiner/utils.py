@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import torch
 import tqdm
+from TorchMiner import BasePlugin
 
 from TorchMiner.Logger import ColoredLogger
 from torch.optim import Optimizer
@@ -94,7 +95,7 @@ def find_resume_target(path: Path, index):
     return None
 
 
-class TorchMinerSettings:
+class TorchMinerBackBone(BasePlugin):
     def __init__(
             self,
             alchemy_directory,
@@ -143,6 +144,7 @@ class TorchMinerSettings:
         :param amp:
         :param amp_scaler:
         """
+        super(TorchMinerBackBone, self).__init__()
         self.miner = None
         self.devices = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # Paths
@@ -207,8 +209,9 @@ class TorchMinerSettings:
                 self.model = torch.nn.DataParallel(self.model, devices)
 
 
-class TorchMinerMetrics:
+class TorchMinerMetrics(BasePlugin):
     def __init__(self):
+        super(TorchMinerMetrics, self).__init__()
         self.miner = None
         self.logger = None
 
@@ -230,7 +233,7 @@ class TorchMinerMetrics:
         self._resume()
 
     def _resume(self):
-        setting: TorchMinerSettings = self.miner.settings
+        setting: TorchMinerBackBone = self.miner.settings
         check_point = find_resume_target(setting.models_dir, setting.resume)
         if check_point:
             # === Start Resume Procedure ===

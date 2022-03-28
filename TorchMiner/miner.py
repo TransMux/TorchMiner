@@ -9,30 +9,30 @@ from torch.optim import Optimizer
 from TorchMiner.Logger import ColoredLogger
 from TorchMiner.plugins import PluginManager
 from . import utils
-from TorchMiner.utils import find_resume_target, TorchMinerSettings, TorchMinerMetrics
+from TorchMiner.utils import find_resume_target, TorchMinerBackBone, TorchMinerMetrics
 
 
 class Miner(object):
     def __init__(
             self,
-            setting: TorchMinerSettings,
+            backbone: TorchMinerBackBone,
             plugins: List[BasePlugin],
     ):
         """
 
-        :param setting:
+        :param backbone:
         :param plugins:
         """
-        self.settings: TorchMinerSettings = setting
+        self.backbone: TorchMinerBackBone = backbone
         self.metrics = TorchMinerMetrics()
         # After read in
         self._create_dirs()
         # --- Init Plugin ---
-        self.plugins = PluginManager(self, plugins)
-        self.logger = self.settings.get_logger("Miner")
+        self.plugins = PluginManager(self, [backbone, self.metrics] + plugins)
+        self.logger = self.backbone.get_logger("Miner")
         # --- Before Init ---
         self.plugins.call("before_init")
-        self.settings.prepare(self)
+        self.backbone.prepare(self)
         self.metrics.prepare(self)
         # --- After Init ---
         self.plugins.call("after_init")
@@ -248,4 +248,3 @@ class Miner(object):
             utils.create_dir(self.alchemy_directory)
             utils.create_dir(self.alchemy_directory, self.experiment)
             utils.create_dir(self.alchemy_directory, self.experiment, "models")
-
