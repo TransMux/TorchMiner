@@ -84,5 +84,5 @@ def find_resume_target(path: Path, index):
     for path in search_paths:
         if path.is_file():
             return path
-    print(f"Tried to find Checkpoint in f{search_paths} but failed.")
+    print(f"Tried to find Checkpoint in {search_paths} but failed.")
     return None
