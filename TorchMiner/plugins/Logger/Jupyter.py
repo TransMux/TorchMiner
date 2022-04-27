@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 import time
 
-import tqdm
+from tqdm import notebook
 from IPython.core.display import HTML, display
 
 from TorchMiner import BasePlugin
@@ -106,4 +106,4 @@ class JupyterTqdm(BasePlugin):
         super(JupyterTqdm, self).before_init()
         if not self.miner.in_notebook:
             self.logger.critical("Miner.in_notebook was set to False, but JupyterTqdm will still patch on it.")
-        self.miner.tqdm = tqdm.notebook.tqdm
+        self.miner.tqdm = notebook.tqdm
