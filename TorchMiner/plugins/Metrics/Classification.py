@@ -13,7 +13,6 @@ class MultiClassesClassificationMetric(BasePlugin):
     """MultiClassesClassificationMetric
     This can be used directly if your loss function is torch.nn.CrossEntropy
     """
-    requirements = ["TensorboardDrawer"]
 
     def __init__(
             self,
@@ -21,7 +20,7 @@ class MultiClassesClassificationMetric(BasePlugin):
             confusion=True,
             kappa_score=True,
             report=True,
-            backend="TensorboardDrawer",
+            recorder=None,
             forward=None,
             labels=None
     ):
@@ -30,17 +29,9 @@ class MultiClassesClassificationMetric(BasePlugin):
         self.confusion_matrix = confusion
         self.kappa_score = kappa_score
         self.classification_report = report
-        self.backend = backend  # TODO:Can be used for sheet recorder
+        self.recorder = recorder  # TODO:Can be used for sheet recorder
         self.forward = forward
         self.labels = labels
-
-    # def before_init(self):
-    #     self.create_sheet_column("latest_confusion_matrix", "Latest Confusion Matrix")
-    #     self.create_sheet_column("kappa_score", "Kappa Score")
-    #     self.create_sheet_column("accuracy", "Accuracy")
-
-    def after_init(self, *args, **kwargs):
-        self.recorder = self.miner.plugins.get(self.backend)
 
     def before_val_epoch_start(self, epoch, **ignore):
         # TODO:Recommended to attach these attributes to Miner Obj, for combination with Other Plugins
@@ -76,7 +67,8 @@ class MultiClassesClassificationMetric(BasePlugin):
         if self.accuracy:
             accuracy = np.array(predicts == label).sum() / len(predicts)
             self.logger.info(f"Val Accuracy:{accuracy}")
-            self.recorder.scalar("Val/Accuracy", accuracy)
+            if self.recorder:
+                self.recorder.scalar("Val/Accuracy", accuracy)
 
         if self.confusion_matrix:
             matrix = confusion_matrix(label, predicts, labels=self.labels)  # Now can pass string items
@@ -84,12 +76,14 @@ class MultiClassesClassificationMetric(BasePlugin):
             svm = sn.heatmap(df_cm, annot=True, cmap="OrRd", fmt=".3g")
             figure = svm.get_figure()
             # if val_loss < self.miner.lowest_val_loss:
-            self.recorder.figure("Val/ConfusionMatrix", figure2numpy(figure))
             plt.close(figure)
+            if self.recorder:
+                self.recorder.figure("Val/ConfusionMatrix", figure2numpy(figure))
 
         if self.kappa_score:
             kappa = cohen_kappa_score(label, predicts, weights="quadratic")
-            self.recorder.scalar("Val/KappaScore", kappa)
+            if self.recorder:
+                self.recorder.scalar("Val/KappaScore", kappa)
 
         if self.classification_report:
             # TODO:Design a better way to output or record classification report
