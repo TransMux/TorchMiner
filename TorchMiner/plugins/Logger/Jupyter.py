@@ -22,7 +22,7 @@ def _in_notebook():
 
 def JupyterEnvironmentAutoEnable():
     if _in_notebook():
-        return [JupyterLogger, JupyterTqdm]
+        return [JupyterLogger(), JupyterTqdm()]
     else:
         return []
 
